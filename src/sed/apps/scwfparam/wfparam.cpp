@@ -290,6 +290,7 @@ WFParam::Config::Config() {
 	magnitudeTolerance = 0.5;
 
 	dumpRecords = false;
+	shakemapTargetVersion = 3;
 }
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -450,6 +451,7 @@ WFParam::WFParam(int argc, char **argv) : Application(argc, argv) {
 	            "Test mode, no messages are sent", false, true);
 	NEW_OPT_CLI(_config.dumpRecords, "Mode", "dump-records",
 	            "Dumps all received records (binary) to [eventid].recs", false, true);
+	NEW_OPT(_config.shakemapTargetVersion, "wfparam.output.shakeMap.version");
 
 	/*
 	cout << "<configuration-options>" << endl;
@@ -2475,7 +2477,10 @@ void WFParam::collectResults() {
 
 		if ( writeToFile ) {
 			eventPath = _config.shakeMapOutputPath + shakeMapEventID + "/";
-			path = eventPath + "input";
+			if ( _config.shakemapTargetVersion < 4 )
+				path = eventPath + "input";
+			else
+				path = eventPath + "current";
 			if ( !Util::pathExists(path) ) {
 				if ( !Util::createPath(path) ) {
 					SEISCOMP_ERROR("Unable to create shakeMap event path: %s",
@@ -2499,14 +2504,27 @@ void WFParam::collectResults() {
 				org->time().value().get(&year, &mon, &day, &hour, &min, &sec);
 				*os << "<?xml version=\"1.0\" encoding=\"" << _config.shakeMapXMLEncoding << "\" standalone=\"yes\"?>" << endl;
 				*os << "<!DOCTYPE earthquake SYSTEM \"earthquake.dtd\">" << endl;
-				*os << "<earthquake id=\"" << shakeMapEventID << "\""
-				    << " lat=\"" << org->latitude().value() << "\""
+				*os << "<earthquake id=\"" << shakeMapEventID << "\"";
+
+				if ( _config.shakemapTargetVersion >= 4 )
+					*os << " netid=\"" << agencyID() << "\"";
+
+				*os << " lat=\"" << org->latitude().value() << "\""
 				    << " lon=\"" << org->longitude().value() << "\""
 				    << " depth=\"" << org->depth().value() << "\""
-				    << " mag=\"" << mag->magnitude().value() << "\""
-				    << " year=\"" << year << "\" month=\"" << mon << "\" day=\"" << day << "\""
-				    << " hour=\"" << hour << "\" minute=\"" << min << "\" second=\"" << sec << "\" timezone=\"GMT\""
-				    << " locstring=\"" << locstring << "\""
+				    << " mag=\"" << mag->magnitude().value() << "\"";
+
+				if ( _config.shakemapTargetVersion < 4 )
+					*os << " year=\"" << year << "\""
+					    << " month=\"" << mon << "\""
+					    << " day=\"" << day << "\""
+					    << " hour=\"" << hour << "\""
+					    << " minute=\"" << min << "\" "
+					    << " second=\"" << sec << "\" timezone=\"GMT\"";
+				else
+					*os << " time=\"" << org->time().value().iso();
+
+				*os << " locstring=\"" << locstring << "\""
 				    << " created=\"" << Core::Time::GMT().seconds() << "\"/>"
 				    << endl;
 			}

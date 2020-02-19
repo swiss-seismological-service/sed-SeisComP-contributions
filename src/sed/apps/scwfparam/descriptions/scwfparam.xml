@@ -429,6 +429,11 @@
 							The XML encoding string written to the Shakemap XML file.
 							</description>
 						</parameter>
+						<parameter name="version" type="int" default="3">
+							<description>
+							The target version of the Shakemap input files.
+							</description>
+						</parameter>
 					</group>
 				</group>
 				<parameter name="magnitudeTolerance" type="double" default="0.5">

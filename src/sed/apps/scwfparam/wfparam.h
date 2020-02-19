@@ -207,6 +207,8 @@ class WFParam : public Application {
 			double      magnitudeTolerance;
 			bool        dumpRecords;
 
+			int         shakemapTargetVersion;
+
 			// Cron options
 			int         updateDelay;
 			std::vector<int> delayTimes;
@@ -309,13 +311,13 @@ class WFParam : public Application {
 
 		Todos                      _todos;
 
-		Logging::Channel *_processingInfoChannel;
-		Logging::Output  *_processingInfoOutput;
+		Logging::Channel          *_processingInfoChannel;
+		Logging::Output           *_processingInfoOutput;
 
-		std::stringstream _report;
-		std::stringstream _result;
+		std::stringstream          _report;
+		std::stringstream          _result;
 
-		std::ofstream     _recordDumpOutput;
+		std::ofstream              _recordDumpOutput;
 };
 
 }
