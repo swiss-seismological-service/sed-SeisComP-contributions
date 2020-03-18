@@ -1,10 +1,8 @@
 Part of the :ref:`VS` package.
 
 scvsmag is part of a new SeisComP implementation of the
-`Virtual Seismologist <http://www.seismo.ethz.ch/research/vs>`_
-(VS) Earthquake Early Warning algorithm (Cua, 2005; Cua and Heaton, 2007) released
-under the `'SED Public License for SeisComP Contributions'
-<http://www.seismo.ethz.ch/static/seiscomp_contrib/license.txt>`_. For a
+`Virtual Seismologist`_ (VS) Earthquake Early Warning algorithm (Cua, 2005; Cua and Heaton, 2007) released
+under the `SED Public License for SeisComP Contributions`_. For a
 given origin it estimates single station magnitudes and a network magnitude
 based on  the envelope attenuation relationship and ground motion amplitude
 ratio derived  by Cua (2005). The original VS algorithm applies the Bayesian
@@ -202,14 +200,20 @@ principle, adapt the XXL thresholds to also locate moderate seismicity with the
 first four picks. This may, however, lead to a larger number of false alerts 
 and it is, therefore, recommended to used this feature only as intended.
 
-References
-==========
-
-Borcherdt, R. D., 1994: Estimates of Site-Dependent Response Spectra for Design (Methodology and Justification), Earthquake Spectra
-
 .. note::
    If scvsmag receives identical picks from different pipelines, the internal 
    buffering fails. The missing picks are automatically retrieved from the 
    database if necessary and if a connection to the database has been established. 
    Alternatively, if picking is done on the same streams in several pipelines they
    can be distinguished by modifying their respective public IDs.
+
+
+References
+==========
+
+Borcherdt, R. D., 1994: Estimates of Site-Dependent Response Spectra for Design (Methodology and Justification), Earthquake Spectra
+
+.. target-notes::
+
+.. _`Virtual Seismologist` : http://www.seismo.ethz.ch/en/research-and-teaching/products-software/EEW/Virtual-Seismologist/
+.. _`SED Public License for SeisComP Contributions` : http://www.seismo.ethz.ch/static/seiscomp_contrib/license.txt
