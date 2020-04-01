@@ -1,7 +1,8 @@
 Part of the :ref:`VS` package.
 
-scenvelope is part of a new SeisComP implementation of the
-`Virtual Seismologist`_ (VS) Earthquake Early Warning algorithm (Cua, 2005; Cua and Heaton, 2007) released
+scenvelope is part of a new SeisComp3 implementation of the
+`Virtual Seismologist`_ (VS) Earthquake
+Early Warning algorithm (Cua, 2005; Cua and Heaton, 2007) released
 under the `SED Public License for SeisComP Contributions`_. It generates
 real-time envelope values for horizontal and vertical acceleration, velocity and
 displacement from raw acceleration and velocity waveforms. It was implemented
@@ -17,17 +18,40 @@ The processing procedure is as follows:
 #. integration or differentiation to velocity, acceleration and displacement
 #. computation of the absolute value within 1 s intervals
 
-The resulting envelope values are sent as messages to :ref:`scmaster`. Depending
+The resulting envelope values are sent as messages to the messaging system via the
+"VS" message group. Depending
 on the number of streams that are processed this can result in a significant
 number of messages (#streams/s).
 
-scenvelope sends messages of type "VS" which requires all modules receiving these
-messages to load the plugin "dmvs". This can be most easily configured through 
-the configuration parameter in :file:`scenvelope.cfg`:
+In order to save the messages in the database
+and to provide them to other modules, the messaging system must to be able
+to handle these messages. Therefore, the plugins *dmvs* and *dmsm* must be available to
+:ref:`scmaster` and the "VS" group must be added.
+
+The plugins can be most easily **added** through the configuration parameters
+in :file:`global.cfg`:
 
 .. code-block:: sh
 
-   plugins = ${plugins}, dmvs
+   plugins = dmvs, dmsm
+
+**Add** the "VS" group the the other message groups defined by :ref:`scmaster` in :file:`scmaster.cfg`:
+
+.. code-block:: sh
+
+   msgGroups = VS, ...
+
+and let scenvelope send the messages to the "VS" group instead of "AMPLITUDE".
+Adjust :file:`scenvelope.cfg`:
+
+.. code-block:: sh
+
+   connection.primaryGroup = VS
+
+.. note::
+
+   When changing :confval:`connection.primaryGroup`, the "VS" group must also be
+   added to the subscriptions in :ref:`scvsmag`.
 
 References
 ==========

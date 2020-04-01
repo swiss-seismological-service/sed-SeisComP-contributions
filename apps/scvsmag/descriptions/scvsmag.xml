@@ -135,7 +135,7 @@
 				<optionReference>messaging#timeout</optionReference>
 				<optionReference>messaging#primary-group</optionReference>
 				<optionReference>messaging#subscribe-group</optionReference>
-				<optionReference>messaging#content-type</optionReference>
+				<optionReference>messaging#encoding</optionReference>
 				<optionReference>messaging#start-stop-msg</optionReference>
 				<option long-flag="test">
 					<description>Test mode, no messages are sent</description>
