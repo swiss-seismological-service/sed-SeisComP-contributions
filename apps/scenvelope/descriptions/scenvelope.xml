@@ -43,7 +43,7 @@
 				<parameter name="useSC3Filter" type="boolean" default="false">
 					<description>
 					This is for internal testing purposes only. true will cause the
-					SeisComP filter routines to be used. If false the filter routines
+					SeisComp3 filter routines to be used. If false the filter routines
 					from the Earthworm based CISN/ETH implementation of VS will be
 					employed.
 					</description>
@@ -80,7 +80,7 @@
 				<optionReference>messaging#timeout</optionReference>
 				<optionReference>messaging#primary-group</optionReference>
 				<optionReference>messaging#subscribe-group</optionReference>
-				<optionReference>messaging#content-type</optionReference>
+				<optionReference>messaging#encoding</optionReference>
 				<optionReference>messaging#start-stop-msg</optionReference>
 				<option long-flag="test">
 					<description>Test mode, no messages are sent</description>
