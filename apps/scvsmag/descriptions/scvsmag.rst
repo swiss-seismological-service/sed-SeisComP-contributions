@@ -198,6 +198,19 @@ quickly as possible:
    # Minimum number of phases.
    autoloc.minPhaseCount = 6
 
+For :ref:`scautoloc` to provide locations with 6 stations, its grid configuration file 
+requires to be setup with equal or lower minimum pick count, and with a corresponding 
+maximum station distance to avoid false alerts.
+
+For :ref:`scautopick` to provide snr amplitudes quickly requires the following 
+setting:
+
+.. code-block:: sh
+
+   # The time window used to compute a maximum (snr) amplitude on the filtered
+   # waveforms.
+   thresholds.amplMaxTimeWindow = 1
+
 scevent configuration
 =====================
 
