@@ -1,8 +1,8 @@
 \mainpage Virtual Seismologist
 
-The Virtual Seismologist in SeisComP3 ("VS-in-SC3") provides near instantaneous 
-estimates of earthquake magnitude as soon as SeisComp3 origins are available. With a 
-well-configured SeisComP3 system running on a dense network, magnitudes for 
+The Virtual Seismologist in SeisComP ("VS-in-SC3") provides near instantaneous 
+estimates of earthquake magnitude as soon as SeisComP origins are available. With a 
+well-configured SeisComP system running on a dense network, magnitudes for 
 local events can be available within 10-20 s of origin time. VS-in-SC3 can be a key 
 component of an earthquake early warning system, and can be used to provide 
 rapid earthquake notifications. With the capability to estimate magnitude 
@@ -16,16 +16,16 @@ attenuation relationships describing how various channels of envelope
 amplitudes vary as a function of magnitude and distance. These relationships 
 were derived from a Southern California dataset with events in the magnitude 
 range 2.5 <= M <= 7.6 and the Next Generation Attenuation (NGA) strong motion 
-dataset. Once a SeisComp3 location estimate is available, VS magnitude estimates 
+dataset. Once a SeisComP location estimate is available, VS magnitude estimates 
 can be computed with as little as 3 seconds of envelope data at a single 
 station (i.e., 3 seconds after trigger time at a single station). Typically, 
 usable envelope data is available at numerous stations by the time the first 
-SeisComp3 origin is available. The VS magnitude estimates are then updated every 
-second for 45 seconds (configurable). The SeisComp3 implementation allows for use of 
+SeisComP origin is available. The VS magnitude estimates are then updated every 
+second for 45 seconds (configurable). The SeisComP implementation allows for use of 
 broadband high-gain seismometers (with clipping value selected) as well as 
 strong motion data. For co-located stations, VS magnitudes are calculated using 
 the strong motion channels if the broadband channels saturate. 
-VS magnitudes in SeisComp3 are called MVS.
+VS magnitudes in SeisComP are called MVS.
 
 ## Development of VS
 The Virtual Seismologist method is a Bayesian approach to earthquake early 
@@ -60,18 +60,18 @@ UC Berkeley and the TauC/Pd OnSite algorithm from Caltech.
 In 2012/13, with funding from the EU projects NERA ("Network of European 
 Research Infrastructures for Earthquake Risk Assessment and Mitigation") and 
 REAKT ("Strategies and Tools for Real-Time EArthquake RisK ReducTion"), VS was 
-integrated into SeisComP3 by the Seismic Network group at the SED in ETH 
-Zurich and gempa GmbH. Both real-time VS implementations (Binder- and SeisComp3-based)
+integrated into SeisComP by the Seismic Network group at the SED in ETH 
+Zurich and gempa GmbH. Both real-time VS implementations (Binder- and SeisComP-based)
 focus on real-time processing of available pick and envelope data. Prior 
 information is not included.
 
-## VS and SeisComP3
+## VS and SeisComP
 Although the codes were effectively re-written, the basic architecture used in 
-the original Earthworm-based implementation is used in SeisComp3. The SeisComp3 modules 
+the original Earthworm-based implementation is used in SeisComP. The SeisComP modules 
 scautopick, scautoloc, and scevent replace the Earthworm Binder modules for 
 providing location estimates. Two new VS-specific modules were developed to 
 continuously calculate envelope amplitudes and to calculate and update VS 
-magnitudes (MVS) once an SeisComp3 origin is available. 
+magnitudes (MVS) once an SeisComP origin is available. 
 
 - \subpage scenv -  reads SeedLink data streams and continuously calculates peak
                     parameters for each of acceleration, velocity and 
@@ -84,23 +84,23 @@ magnitudes (MVS) once an SeisComp3 origin is available.
 
 MVS is calculated and updated (with updates attached to the preferred origin) 
 each second for 45 seconds (unless configured differently) after it is first 
-invoked by the availability of a new SeisComp3 event. If configured, Ml can also be 
+invoked by the availability of a new SeisComP event. If configured, Ml can also be 
 calculated for these events.
 
 An additional module, \subpage scvsml, creates log output and mails solutions 
 once a new event is fully processed.
 
-## Configuring and optimizing VS in SeisComp3 EEW
+## Configuring and optimizing VS in SeisComP EEW
 The performance of VS-in-SC3 is strongly dependent on: 1) the quality and 
-density of the seismic network; 2) the configuration of the general SeisComp3 system. 
+density of the seismic network; 2) the configuration of the general SeisComP system. 
 scautoloc requires at least 6 triggers to create an origin. Given the network 
 geometry, maps of when VS estimates would be first available 
 (indicative of the size of the blind zone as a function of earthquake location 
-relative to stations) can be generated for regions where EEW is of interest. SeisComp3 
+relative to stations) can be generated for regions where EEW is of interest. SeisComP 
 VS uses scautoloc, which was not built for EEW, so an 
 additional delay of some seconds is required for origin processing. VS 
-magnitudes (MVS) can be expected within 1-2 seconds after a SeisComp3 origin is 
-available. In the densest part of the Swiss network, SeisComp3 origins are available 
+magnitudes (MVS) can be expected within 1-2 seconds after a SeisComP origin is 
+available. In the densest part of the Swiss network, SeisComP origins are available 
 within 10-15 seconds after origin time; MVS is typically available 1-2 seconds 
 later.
 
@@ -128,7 +128,7 @@ dissemination of results is not part of the core modules.
 
 ## False alarms, missed events, solution quality
 The rate of false alarms and missed events is determined by the output of the 
-normal SeisComp3 origin chain (scautopick, scautoloc), and will be similar to the 
+normal SeisComP origin chain (scautopick, scautoloc), and will be similar to the 
 performance of the automatic setup for typical network operations (i.e. if you 
 do not trust your automatic origins for the network, you will not trust them for
 VS either). A solution quality is independently estimated by VS, combining 
@@ -136,9 +136,9 @@ information on location quality and station quality . A detailed graph on how
 the solution quality is determined can be found here: \subpage lh 
 
 ## VS License 
-The SeisComp3 VS modules are free and open source, and are part of the SeisComp3 
+The SeisComP VS modules are free and open source, and are part of the SeisComP 
 distribution from Seattle v2013.xxx. They are distributed under the 'SED Public 
-License for SeisComP3 Contributions' 
+License for SeisComP Contributions' 
 (see http://www.seismo.ethz.ch/static/seiscomp_contrib/license.txt ).
 
 ## References
@@ -155,9 +155,9 @@ Early Warning Algorithm in Switzerland and California. Abstract 1481084 presente
 
 
 \page scenv scenvelope
-*scenvelope* is part of a new SeisComp3 implementation of the [Virtual Seismologist]( http://www.seismo.ethz.ch/research/vs) 
+*scenvelope* is part of a new SeisComP implementation of the [Virtual Seismologist]( http://www.seismo.ethz.ch/research/vs) 
 (VS) Earthquake Early Warning algorithm (Cua, 2005; Cua and Heaton, 2007) released 
-under the 'SED Public License for SeisComP3 Contributions' 
+under the 'SED Public License for SeisComP Contributions' 
 (http://www.seismo.ethz.ch/static/seiscomp_contrib/license.txt ). It generates 
 real-time envelope values for horizontal and vertical 
 acceleration, velocity and displacement from raw acceleration and velocity 
@@ -212,7 +212,7 @@ compute a real-time average for baseline correction.
 
 \par envelope.useSC3Filter (bool) [false]
 This is for internal testing purposes only. 'true' will cause the 
-SeisComp3 filter routines to be used in step 3 of the processing (s.o.). If 
+SeisComP filter routines to be used in step 3 of the processing (s.o.). If 
 'false' the filter routines from the Earthworm based CISN/ETH implementation of 
 VS will be employed.
 
@@ -341,9 +341,9 @@ Start time of data acquisition time window, requires also \-\-te.
 End time of data acquisition time window, requires also \-\-ts.
 
 \page scvsm scvsmag
-*scvsmag* is part of a new SeisComp3 implementation of the [Virtual Seismologist]( http://www.seismo.ethz.ch/research/vs) 
+*scvsmag* is part of a new SeisComP implementation of the [Virtual Seismologist]( http://www.seismo.ethz.ch/research/vs) 
 (VS) Earthquake Early Warning algorithm (Cua, 2005; Cua and Heaton, 2007) released 
-under the 'SED Public License for SeisComP3 Contributions' 
+under the 'SED Public License for SeisComP Contributions' 
 (http://www.seismo.ethz.ch/static/seiscomp_contrib/license.txt ). For a given 
 origin it estimates single station magnitudes and a network magnitude based on 
 the envelope attenuation relationship and ground motion amplitude ratio derived 
@@ -613,9 +613,9 @@ Borcherdt, R. D., 1994: Estimates of Site-Dependent Response Spectra for Design 
 
 \page scvsml scvsmaglog
 
-*scvsmaglog* is part of a new SeisComp3 implementation of the [Virtual Seismologist]( http://www.seismo.ethz.ch/research/vs) 
+*scvsmaglog* is part of a new SeisComP implementation of the [Virtual Seismologist]( http://www.seismo.ethz.ch/research/vs) 
 (VS) Earthquake Early Warning algorithm (Cua, 2005; Cua and Heaton, 2007) released 
-under the 'SED Public License for SeisComP3 Contributions' 
+under the 'SED Public License for SeisComP Contributions' 
 (http://www.seismo.ethz.ch/static/seiscomp_contrib/license.txt ). It logs the VS 
 magnitude messages received from *scvsmag* and, once 
 an event has timed out, generates report files. These report files are saved 
@@ -676,7 +676,7 @@ Path to the configuration file that defines the UserDisplay interface (see
 \par report.eventbuffer (int) [3600]
 Time in seconds that events and the related objects are buffered.
 
-\par report.directory (string) [~/.seiscomp3/log/VS_reports]
+\par report.directory (string) [~/.seiscomp/log/VS_reports]
 Directory to save reports to. 
 
 
@@ -770,7 +770,7 @@ Sets sending of a start- and a stop message.
 
 ### Reports
 \par \-\-savedir arg
-Directory to save reports to. The default is ~/.seiscomp3/log/VS_reports.
+Directory to save reports to. The default is ~/.seiscomp/log/VS_reports.
 
 ## Reports
 Below is an example of the first few lines of a report file:
