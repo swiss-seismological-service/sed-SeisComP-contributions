@@ -43,7 +43,7 @@
 				<parameter name="useSC3Filter" type="boolean" default="false">
 					<description>
 					This is for internal testing purposes only. true will cause the
-					SeisComp3 filter routines to be used. If false the filter routines
+					SeisComP filter routines to be used. If false the filter routines
 					from the Earthworm based CISN/ETH implementation of VS will be
 					employed.
 					</description>

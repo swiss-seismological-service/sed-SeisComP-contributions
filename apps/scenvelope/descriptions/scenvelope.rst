@@ -1,6 +1,6 @@
 Part of the :ref:`VS` package.
 
-scenvelope is part of a new SeisComp3 implementation of the
+scenvelope is part of a new SeisComP implementation of the
 `Virtual Seismologist`_ (VS) Earthquake
 Early Warning algorithm (Cua, 2005; Cua and Heaton, 2007) released
 under the `SED Public License for SeisComP Contributions`_. It generates
