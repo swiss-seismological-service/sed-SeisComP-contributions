@@ -3,7 +3,7 @@ Part of the :ref:`VS` package.
 scenvelope is part of a new SeisComP implementation of the
 `Virtual Seismologist`_ (VS) Earthquake
 Early Warning algorithm (Cua, 2005; Cua and Heaton, 2007) released
-under the `SED Public License for SeisComP Contributions`_. It generates
+under the terms of the `GNU Affero General Public License`_. It generates
 real-time envelope values for horizontal and vertical acceleration, velocity and
 displacement from raw acceleration and velocity waveforms. It was implemented
 to handle the waveform pre-processing necessary for the :ref:`scvsmag` module.
@@ -59,4 +59,4 @@ References
 .. target-notes::
 
 .. _`Virtual Seismologist` : http://www.seismo.ethz.ch/en/research-and-teaching/products-software/EEW/Virtual-Seismologist/
-.. _`SED Public License for SeisComP Contributions` : http://www.seismo.ethz.ch/static/seiscomp_contrib/license.txt
+.. _`GNU Affero General Public License` : http://www.gnu.org/licenses/agpl-3.0.en.html
