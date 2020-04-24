@@ -148,8 +148,8 @@ VS License
 ----------
 
 The SeisComP VS modules are free and open source, and are part of the SeisComP
-distribution from Seattle v2013.200. They are distributed under the `SED Public
-License for SeisComP Contributions`_.
+distribution from Seattle v2013.200. They are distributed under the terms of
+the `GNU Affero General Public License`_.
 
 
 References
