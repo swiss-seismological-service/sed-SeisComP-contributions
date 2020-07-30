@@ -24,6 +24,12 @@
 					Triggers processing also on origins with status PRELIMINARY.
 					</description>
 				</parameter>
+				<parameter name="allowManualOrigins" type="boolean" default="false">
+					<description>
+					Triggers processing also on origins with mode MANUAL. Otherwise
+					only origins with mode AUTOMATIC are considered.
+					</description>
+				</parameter>
 				<parameter name="useWeight" type="boolean" default="false">
 					<description>
 					Whether to use the weight of the picks associated with the
