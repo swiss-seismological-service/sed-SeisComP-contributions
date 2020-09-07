@@ -170,6 +170,7 @@ class Reloc : public Client::Application {
 				SEISCOMP_ERROR("  + must be (AUTOMATIC|MANUAL)");
 				return false;
 			}
+
 			SEISCOMP_DEBUG("Running with configuration:");
 			SEISCOMP_DEBUG("  + Locator / profile: %s / %s", _locatorType.c_str(), _locatorProfile.c_str());
 			SEISCOMP_DEBUG("  + ignoreRejectOrigins: %s", _ignoreRejected?"True":"False");
@@ -178,6 +179,9 @@ class Reloc : public Client::Application {
 			SEISCOMP_DEBUG("  + useWeight: %s", _useWeight?"True":"False");
 			SEISCOMP_DEBUG("  + adoptFixedDepth: %s", _adoptFixedDepth?"True":"False");
 			SEISCOMP_DEBUG("  + evaluation mode of relocated origins: %s", _originEvaluationMode.c_str());
+			if ( !_originIDs.empty() ) {
+				SEISCOMP_DEBUG("  + considered origins: %s", toString<string>(_originIDs).c_str());
+			}
 			if ( !_originIDSuffix.empty() ) {
 				SEISCOMP_DEBUG("  + for relocated origins add suffix to ID or original origins: %s",
 				               _originIDSuffix.c_str());
@@ -195,13 +199,11 @@ class Reloc : public Client::Application {
 				// Disable database
 				setDatabase(NULL);
 
-				if ( !_originIDs.empty() ) {
-					SEISCOMP_INFO("Ignoring -O option as --ep is set: processing all origins");
-				}
 
+				SEISCOMP_INFO("Processing file %s", _epFile.c_str());
 				IO::XMLArchive ar;
 				if ( !ar.open(_epFile.c_str()) ) {
-					SEISCOMP_ERROR("Failed to open %s", _epFile.c_str());
+					SEISCOMP_ERROR("  + failed to open %s", _epFile.c_str());
 					return false;
 				}
 
@@ -210,17 +212,45 @@ class Reloc : public Client::Application {
 				ar.close();
 
 				if ( !ep ) {
-					SEISCOMP_ERROR("No event parameters found in %s", _epFile.c_str());
+					SEISCOMP_ERROR("  + no event parameters found");
 					return false;
 				}
 
 				int numberOfOrigins = (int)ep->originCount();
+				SEISCOMP_DEBUG("  + found %i origins", numberOfOrigins);
 				bool replace = commandline().hasOption("replace");
+
+				if ( !_originIDs.empty() ) {
+					// test if requested origin was loaded
+					for ( vector<string>::const_iterator it = _originIDs.begin();
+						  it != _originIDs.end(); ++it ) {
+
+						if ( !Origin::Find(it->c_str()) ) {
+							SEISCOMP_ERROR("  + found no origin with ID: %s", it->c_str());
+							return false;
+						}
+
+					}
+				}
 
 				for ( int i = 0; i < numberOfOrigins; ++i ) {
 					OriginPtr org = ep->origin(i);
 					std::string publicID = org->publicID();
-					SEISCOMP_INFO("Processing origin %s", publicID.c_str());
+					SEISCOMP_DEBUG("Processing origin %s", publicID.c_str());
+
+					bool processing = true;
+					if ( !_originIDs.empty() ) {
+						processing = false;
+						for ( size_t i = 0; i < _originIDs.size(); ++i ) {
+							if ( publicID == _originIDs[i] ) {
+								processing = true;
+							}
+						}
+						if ( !processing ) {
+							SEISCOMP_DEBUG("  + skip origin, not in origin-id list");
+							continue;
+						}
+					}
 
 					try {
 						org = process(org.get());
@@ -265,7 +295,7 @@ class Reloc : public Client::Application {
 
 					std::string publicID = org->publicID();
 					OriginPtr newOrg;
-					SEISCOMP_INFO("Processing origin %s", publicID.c_str());
+					SEISCOMP_DEBUG("Processing origin %s", publicID.c_str());
 					try {
 						newOrg = process(org.get());
 					}
@@ -458,6 +488,7 @@ class Reloc : public Client::Application {
 					newOrg->setEvaluationMode(EvaluationMode(AUTOMATIC));
 				else
 					newOrg->setEvaluationMode(EvaluationMode(MANUAL));
+					SEISCOMP_DEBUG("  + set evaluation mode: 'manual'");
 
 				CreationInfo *ci;
 
@@ -476,7 +507,7 @@ class Reloc : public Client::Application {
 
 			if ( commandline().hasOption("measure-relocation-time") ) {
 				double milliseconds = 1000.*seconds;
-				SEISCOMP_INFO("  + relocation of %s took %.3f ms", org->publicID().c_str(), milliseconds);
+				SEISCOMP_DEBUG("  + time for relocating: %.3f ms", milliseconds);
 			}
 
 			if ( commandline().hasOption("dump") ) {
