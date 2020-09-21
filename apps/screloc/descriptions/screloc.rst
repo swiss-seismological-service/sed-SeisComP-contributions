@@ -60,7 +60,7 @@ The following example configuration shows a setup of screloc for
    NonLinLoc.controlFile = ${NLLROOT}/NLL.default.conf
 
    # Set the default pick error in seconds passed to NonLinLoc
-   # if no SC3 pick uncertainty is available.
+   # if no SeisComP pick uncertainty is available.
    NonLinLoc.defaultPickError = 0.1
 
    # Define the available NonLinLoc location profiles. The order

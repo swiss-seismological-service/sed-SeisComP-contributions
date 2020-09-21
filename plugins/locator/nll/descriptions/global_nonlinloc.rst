@@ -49,12 +49,12 @@ function calls. The following source files are included:
 Error measures
 ==============
 
-After running NonLinLoc the output is converted into a SC3 (QuakeML) origin
+After running NonLinLoc the output is converted into a SeisComP (QuakeML) origin
 object including all available error measures. The following table shows how
-the NLL error measures are mapped to the SC3 data model:
+the NLL error measures are mapped to the SeisComP data model:
 
 =========================================================  =====================================================
-SC3                                                        NLL
+SeisComP                                                   NLL
 =========================================================  =====================================================
 Origin.latitude.uncertainty                                sqrt(phypo->cov.yy)
 Origin.longitude.uncertainty                               sqrt(phypo->cov.xx)
@@ -114,7 +114,7 @@ The following file are stored:
 - NLL octree (.loc.octree)
 - NLL scatter file (.loc.scat)
 
-In addition to the native NLL output a SC3 origin object is created and
+In addition to the native NLL output a SeisComP origin object is created and
 returned to the calling instance. Usually this object is then sent via messaging.
 
 
@@ -145,7 +145,7 @@ Futhermore add the plugin configuration:
    NonLinLoc.controlFile = ${NLLROOT}/NLL.default.conf
 
    # Set the default pick error in seconds passed to NonLinLoc
-   # if no SC3 pick uncertainty is available.
+   # if no SeisComP pick uncertainty is available.
    NonLinLoc.defaultPickError = 0.1
 
    # Define the available NonLinLoc location profiles. The order

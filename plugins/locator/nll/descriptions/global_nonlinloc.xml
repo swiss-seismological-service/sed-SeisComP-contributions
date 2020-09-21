@@ -43,7 +43,7 @@
 
 				<parameter name="defaultPickError" type="double" default="0.5" unit="s">
 					<description>
-						The default pick error in seconds passed to NonLinLoc if a SC3 pick
+						The default pick error in seconds passed to NonLinLoc if a SeisComP pick
 						object does not provide pick time uncertainties.
 					</description>
 				</parameter>
