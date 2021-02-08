@@ -256,32 +256,55 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 			// Setup each component
 			if ( !_ampN.setup(settings) || !_ampE.setup(settings) ) return false;
 
-			// Read the settings variable MLh.maxavg. This can be found in the applications
+			// Read the settings variable amplitudes.MLh.maxavg. This can be found in the applications
 			// configuration file at:
-			// module.trunk.global.MLh.maxavg
+			// module.trunk.global.amplitudes.MLh.maxavg
 			//   or per station (highest priority)
-			// module.trunk.CH.AIGLE.MLh.maxavg
+			// module.trunk.CH.AIGLE.amplitudes.MLh.maxavg
 			try {
-				string s = settings.getString("MLh.maxavg");
+				string s = settings.getString("amplitudes.MLh.maxavg");
 				if ( !_combiner.fromString(s.c_str()) ) {
-					SEISCOMP_ERROR("MLh: invalid combiner type for station %s.%s: %s",
+					SEISCOMP_ERROR("Invalid combiner type for station %s.%s: %s",
 					               settings.networkCode.c_str(), settings.stationCode.c_str(),
 					               s.c_str());
 					return false;
 				}
 			}
-			catch ( ... ) {}
+			catch ( ... ) {
+				try {
+					string s = settings.getString("MLh.maxavg");
+					SEISCOMP_WARNING("Configure amplitudes.MLh.maxavg in global bindings. "
+					                 "The old parameter MLh.maxavg has been deprecated "
+					                 "and should be replaced.");
+					if ( !_combiner.fromString(s.c_str()) ) {
+						SEISCOMP_ERROR("Invalid combiner type for station %s.%s: %s",
+						               settings.networkCode.c_str(), settings.stationCode.c_str(),
+						               s.c_str());
+						return false;
+					}
+				}
+				catch ( ... ) {}
+			}
 
 			// get the clipping threshold from the config file
 			try {
-				_ampN.ClippingThreshold=settings.getDouble("MLh.ClippingThreshold");
-				_ampE.ClippingThreshold=_ampN.ClippingThreshold;
+				_ampN.ClippingThreshold=settings.getDouble("amplitudes.MLh.ClippingThreshold");
 			}
 			catch ( ... ) {
-				SEISCOMP_DEBUG("Failed to read MLh.ClippingThreshold from config file, using defaults");
-				_ampN.ClippingThreshold=99999999999.0;	// default if not set in config file
-				_ampE.ClippingThreshold=_ampN.ClippingThreshold;
+				try {
+					_ampN.ClippingThreshold=settings.getDouble("MLh.ClippingThreshold");
+					SEISCOMP_WARNING("Configure amplitudes.MLh.ClippingThreshold in global bindings. "
+					                 "The old parameter MLh.ClippingThreshold has been deprecated and "
+					                 "should be replaced");
+				}
+				catch ( ... ) {
+					SEISCOMP_DEBUG("Failed to read amplitudes.MLh.ClippingThreshold from config file, using defaults");
+					_ampN.ClippingThreshold=99999999999.0;	// default if not set in config file
+				}
 			}
+
+			_ampE.ClippingThreshold=_ampN.ClippingThreshold;
+
 			return true;
 		}
 
@@ -528,15 +551,25 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 			list_of_parametersets.clear();
 
 			try {
-				// Read the settings variable MLh.params. This can be found in the applications
+				// Read the settings variable magnitudes.MLh.params. This can be found in the applications
 				// configuration file at:
-				// module.trunk.global.MLh.params
+				// module.trunk.global.magnitudes.MLh.params
 				//   or per station (highest priority)
-				// module.trunk.CH.AIGLE.MLh.params
-				if ( !initParameters(list_of_parametersets, settings.getString("MLh.params")) )
+				// module.trunk.CH.AIGLE.magnitudes.MLh.params
+				if ( !initParameters(list_of_parametersets, settings.getString("magnitudes.MLh.params")) ) {
 					return false;
+				}
 			}
-			catch ( ... ) {}
+			catch ( ... ) {
+				try {
+					if ( !initParameters(list_of_parametersets, settings.getString("MLh.params")) ) {
+						return false;
+					}
+					SEISCOMP_WARNING("Configure magnitudes.MLh.params in global bindings. "
+					                 "The old parameter MLh.params has been deprecated and should be replaced");
+				}
+				catch ( ... ) {}
+			}
 
 			return true;
 		}
@@ -588,7 +621,7 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 
 				param_struct new_paramset;
 				if ( !Core::fromString(new_paramset.dist, range_str) ) {
-					SEISCOMP_ERROR("MLh: %s: range is not a numeric value",
+					SEISCOMP_ERROR("%s: range is not a numeric value",
 					               params.c_str());
 					return false;
 				}
@@ -600,13 +633,13 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 				}
 				else {
 					if ( !Core::fromString(new_paramset.A, A_str) ) {
-						SEISCOMP_ERROR("MLh: %s: not a numeric value",
+						SEISCOMP_ERROR("%s: not a numeric value",
 						               A_str.c_str());
 						return false;
 					}
 					iss_paramset >> B_str;
 					if ( !Core::fromString(new_paramset.B, B_str) ) {
-						SEISCOMP_ERROR("MLh: %s: not a numeric value",
+						SEISCOMP_ERROR("%s: not a numeric value",
 						               B_str.c_str());
 						return false;
 					}
@@ -652,7 +685,7 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 			float epdistkm,hypdistkm;
 
 			if ( list_of_parametersets.size() == 0 ) {
-				SEISCOMP_ERROR("MLh: no calibrations configured: see bindings: MLh.params");
+				SEISCOMP_ERROR("No calibrations configured: see bindings: magnitudes.MLh.params");
 				return IncompleteConfiguration;
 			}
 
@@ -678,17 +711,17 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 			// select the right set depending on the distance
 			selected_parameterset = selectParameters(hypdistkm, list_of_parametersets);
 
-			SEISCOMP_DEBUG("epdistkm: %f\n",epdistkm);
-			SEISCOMP_DEBUG("hypdistkm: %f\n",hypdistkm);
+			SEISCOMP_DEBUG("Epdistkm: %f\n",epdistkm);
+			SEISCOMP_DEBUG("Hypdistkm: %f\n",hypdistkm);
 
 			if ( selected_parameterset.nomag ) {
-				SEISCOMP_DEBUG( "epicenter distance out of configured range, no magnitude");
+				SEISCOMP_DEBUG( "Epicentral distance out of configured range, no magnitude");
 				return DistanceOutOfRange;
 			}
 			else {
 				SEISCOMP_DEBUG("The selected range is: %f", selected_parameterset.dist);
-				SEISCOMP_DEBUG("A:     %f", selected_parameterset.A);
-				SEISCOMP_DEBUG("B:     %f", selected_parameterset.B);
+				SEISCOMP_DEBUG("  + A:     %f", selected_parameterset.A);
+				SEISCOMP_DEBUG("  + B:     %f", selected_parameterset.B);
 				*mag = log10(amplitude)  + selected_parameterset.A * hypdistkm + selected_parameterset.B;
 				return OK;
 			}
