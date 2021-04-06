@@ -2524,7 +2524,7 @@ void WFParam::collectResults() {
 					    << " minute=\"" << min << "\" "
 					    << " second=\"" << sec << "\" timezone=\"GMT\"";
 				else
-					*os << " time=\"" << org->time().value().iso();
+					*os << " time=\"" << org->time().value().iso() << "\"";
 
 				*os << " locstring=\"" << locstring << "\""
 				    << " created=\"" << Core::Time::GMT().seconds() << "\"/>"
