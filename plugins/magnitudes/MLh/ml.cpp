@@ -19,6 +19,7 @@
 
 #include "ml.h"
 #include <seiscomp/logging/log.h>
+#include <seiscomp/core/version.h>
 #include <seiscomp/core/strings.h>
 #include <seiscomp/processing/amplitudes/ML.h>
 #include <seiscomp/processing/magnitudeprocessor.h>
@@ -590,7 +591,9 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 			const DataModel::Origin *,
 			const DataModel::SensorLocation *,
 			const DataModel::Amplitude *,
+#if SC_API_VERSION >= SC_API_VERSION_CHECK(15,0,0)
 			const Locale *,
+#endif
 			double &value) {
 			if ( delta < DELTA_MIN || delta > DELTA_MAX )
 				return DistanceOutOfRange;
