@@ -1,1 +1,1 @@
-SUBDIRS(locator magnitudes master recordstream)
+SUBDIRS(locator magnitudes master)
