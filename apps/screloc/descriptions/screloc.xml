@@ -45,6 +45,12 @@
 					during the relocation process as well.
 					</description>
 				</parameter>
+				<parameter name="storeSourceOriginID" type="boolean" default="false">
+					<description>
+						Whether to store the ID of the input origin as comment in the
+						relocated origin or not.
+					</description>
+				</parameter>  
 				<parameter name="originIDSuffix" type="string">
 					<description>
 					Suffix appended to the publicID of the origin to be relocated
