@@ -63,6 +63,7 @@ class Reloc : public Client::Application {
 			_originEvaluationMode = "AUTOMATIC";
 			_adoptFixedDepth = false;
 			_repeatedRelocationCount = 1;
+			_storeSourceOriginID = false;
 		}
 
 
@@ -130,6 +131,9 @@ class Reloc : public Client::Application {
 			catch ( ... ) {}
 
 			try { _originIDSuffix = configGetString("reloc.originIDSuffix"); }
+			catch ( ... ) {}
+
+			try { _storeSourceOriginID = configGetBool("reloc.storeSourceOriginID"); }
 			catch ( ... ) {}
 
 			if ( !_epFile.empty() )
@@ -503,6 +507,15 @@ class Reloc : public Client::Application {
 
 				ci->setAgencyID(agencyID());
 				ci->setAuthor(author());
+
+				// keep track of the triggering origin of this relocation
+				if (_storeSourceOriginID ) {
+					DataModel::CommentPtr comment = new DataModel::Comment();
+					comment->setId("relocation::sourceOrigin");
+					comment->setText(org->publicID());
+					comment->setCreationInfo(*ci);
+					newOrg->add(comment.get());
+				}
 			}
 
 			if ( commandline().hasOption("measure-relocation-time") ) {
@@ -571,6 +584,7 @@ class Reloc : public Client::Application {
 		ObjectLog                 *_inputOrgs;
 		ObjectLog                 *_outputOrgs;
 		bool                       _useWeight;
+		bool                       _storeSourceOriginID;
 		std::string                _originEvaluationMode;
 		std::string                _epFile;
 		size_t                     _repeatedRelocationCount;
