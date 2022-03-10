@@ -63,6 +63,7 @@ class Reloc : public Client::Application {
 			_originEvaluationMode = "AUTOMATIC";
 			_adoptFixedDepth = false;
 			_repeatedRelocationCount = 1;
+			_storeSourceOriginID = false;
 		}
 
 
