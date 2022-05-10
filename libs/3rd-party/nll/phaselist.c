@@ -103,7 +103,7 @@ PhsNode *addNLLPhaseStringToPhaseList(PhsNode **phead, char *phase_string, int i
 	}
 
 	phsNode = addArrivalToPhaseList(phead, parrival, id, addDuplicates);
-	if (phsNode == DUPLICATE_PAHSE_FOUND) {
+	if (phsNode == DUPLICATE_PHASE_FOUND) {
 		free(parrival);
 	}
 
@@ -143,7 +143,7 @@ PhsNode *addArrivalToPhaseList(PhsNode **phead, ArrivalDesc* parrival, int id, i
 
 	if (!addDuplicates) {
 		if(findPhase(*phead, parrival) != NULL)
-			return(DUPLICATE_PAHSE_FOUND);
+			return(DUPLICATE_PHASE_FOUND);
 	}
 
 	addr = (PhsNode*) malloc(sizeof(PhsNode));

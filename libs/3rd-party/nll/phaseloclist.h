@@ -71,7 +71,7 @@ tel: +33(0)493752502  e-mail: anthony@alomax.net  web: http://www.alomax.net
 #define MAX_NUM_LOCATIONS 1000
 #define MAX_NUM_PHASES_PER_LOC 4096
 
-#define DUPLICATE_PAHSE_FOUND ((PhsNode *) -9876)
+#define DUPLICATE_PHASE_FOUND ((PhsNode *) -9876)
 
 
 
