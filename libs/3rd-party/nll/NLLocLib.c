@@ -114,7 +114,7 @@ e-mail: anthony@alomax.net  web: http://www.alomax.net
 #include "phaseloclist.h"
 #include "otime_limit.h"
 #include "NLLocLib.h"
-#include "io/json_io.h"
+//#include "io/json_io.h"
 
 #ifdef CUSTOM_ETH
 #include "custom_eth/eth_functions.h"
@@ -455,8 +455,11 @@ int Locate(int ngrid, char* fn_loc_obs, char* fn_root_out, int numArrivalsReject
             }
         }
 
+
         if (SearchType == SEARCH_OCTTREE && (iSaveNLLocOctree || return_oct_tree_grid)) {
 
+            //warning: implicit declaration of function 'convertOcttreeValuesToProbabilityDensity'
+            //warning: implicit declaration of function 'normalizeProbabilityDensityOcttree'
             if (LocGrid[ngrid].type == GRID_PROB_DENSITY) {
                 // convert oct tree values to likelihood
                 oct_tree_prob_integral = convertOcttreeValuesToProbabilityDensity(
@@ -2646,6 +2649,7 @@ int GetNextObs(HypoDesc* phypo, FILE* fp_obs, ArrivalDesc *arrival, char* ftype_
 
         return (istat);
 
+    /* removing this to avoid needing io directory (PICKLE MAY 2022)
     } else if (strncmp(ftype_obs, "INGV_JSON", 9) == 0) {
 
         // INGV json format 20211012
@@ -2658,116 +2662,8 @@ int GetNextObs(HypoDesc* phypo, FILE* fp_obs, ArrivalDesc *arrival, char* ftype_
 
         return (istat);
 
-    } else if (strcmp(ftype_obs, "UUSS") == 0) {
-        /* SH Seismograph Station University of Utah format (PING)
-                                    first line: reftime (yymmddhhmm)
-                                    next lines arrival times rel. to reftime incl. duration
-         */
-        /* interpret line: reftime or phase information or comment line etc */
-        chr = fgetc(fp_obs);
-        /* fprintf(stderr,"GetNextObs: chr %d\n",chr); */
-        if (chr == EOF) {
-            return (OBS_FILE_END_OF_INPUT);
-        } else if (chr == 99 || chr == 67) {
-            /* comment line starts with 'c' */
-            /* read until end of line */
-            ungetc(chr, fp_obs);
-            cstat = fgets(line, MAXLINE_LONG, fp_obs);
-            return (OBS_IS_COMMENT_LINE);
-        } else if (chr == 35) {
-            /* end of event marked by '#' */
-            /* read until end of line */
-            ungetc(chr, fp_obs);
-            cstat = fgets(line, MAXLINE_LONG, fp_obs);
-            return (OBS_FILE_END_OF_EVENT);
-        } else if (chr == 32) {
-            /* line contains reference time starting with a space */
-            ungetc(chr, fp_obs);
-            cstat = fgets(line, MAXLINE_LONG, fp_obs);
-            istat = ReadFortranInt(line, 2, 2, &EventTime.year);
-            if (EventTime.year < 20)
-                EventTime.year += 100;
-            EventTime.year += 1900;
-            istat += ReadFortranInt(line, 4, 2, &EventTime.month);
-            istat += ReadFortranInt(line, 6, 2, &EventTime.day);
-            istat += ReadFortranInt(line, 8, 2, &EventTime.hour);
-            istat += ReadFortranInt(line, 10, 2, &EventTime.min);
-            arrival->sec = 0.0;
-        } else {
-            /* line contains phase information */
-            ungetc(chr, fp_obs);
-        }
-
-        /* read next line */
-        cstat = fgets(line, MAXLINE_LONG, fp_obs);
-        if (cstat == NULL)
-            return (OBS_FILE_END_OF_INPUT);
-        /* now read phase info */
-        istat = ReadFortranString(line, 1, 4, arrival->label);
-        /* check if comment line */
-        if ((strncmp(arrival->label, "c", 1) == 0) || (strncmp(arrival->label, "C", 1) == 0)) {
-            return (OBS_IS_COMMENT_LINE);
-        }
-        TrimString(arrival->label);
-        strcpy(arrival->phase, "P");
-        if ((istat += ReadFortranString(line, 6, 1, arrival->first_mot)) != 2) {
-            /* read next lines until arrival time is found */
-            while ((cstat = fgets(line, MAXLINE_LONG, fp_obs)) != NULL) {
-                if (strncmp(line, "#", 1) == 0)
-                    /* end of event detected */
-                    return (OBS_FILE_END_OF_EVENT);
-                istat = 0;
-                /* fprintf(stderr,"GetNextObs: %s\n",line); */
-                /* fprintf(stderr,"GetNextObs: %d %s\n",istat,arrival->first_mot); */
-                if ((istat += ReadFortranString(line, 6, 1, arrival->first_mot)) == 1) {
-                    istat = ReadFortranString(line, 1, 4, arrival->label);
-                    if ((strncmp(arrival->label, "c", 1) == 0) || (strncmp(arrival->label, "C", 1) == 0)) {
-                        return (OBS_IS_COMMENT_LINE);
-                    }
-                    TrimString(arrival->label);
-                    break;
-                }
-            }
-        }
-
-        if (cstat == NULL)
-            return (OBS_FILE_END_OF_INPUT);
-
-        /* continue with reading of remaining phase information */
-        istat += ReadFortranInt(line, 10, 1, &arrival->quality);
-        istat += ReadFortranReal(line, 12, 6, &arrival->sec);
-
-        arrival->year = EventTime.year;
-        arrival->month = EventTime.month;
-        arrival->day = EventTime.day;
-        arrival->hour = EventTime.hour;
-        arrival->min = EventTime.min;
-
-        /* convert quality to error */
-        Qual2Err(arrival);
-
-        /* fprintf(stderr,"GetNextObs: phase %4s %1s %1s %1d %5.2f\n",arrival->label,
-        arrival->phase,arrival->first_mot,arrival->quality,arrival->sec); */
-
-        /* check for possible S-arrival */
-        istat += ReadFortranReal(line, 21, 6, &ssec);
-        if (ssec > 0.0) {
-            arrival++;
-            istat = ReadFortranString(line, 1, 4, arrival->label);
-            TrimString(arrival->label);
-            strcpy(arrival->phase, "S");
-            istat += ReadFortranInt(line, 19, 1, &arrival->quality);
-            arrival->year = EventTime.year;
-            arrival->month = EventTime.month;
-            arrival->day = EventTime.day;
-            arrival->hour = EventTime.hour;
-            arrival->min = EventTime.min;
-            arrival->sec = ssec;
-            /* convert quality to error */
-            Qual2Err(arrival);
-            return (OBS_FILE_TWO_ARRIVALS_READ);
-        } else
-            return (istat);
+    ALSO removed university of utah formatting.. created some issues / needs work
+    */
 
 
     } else if (strcmp(ftype_obs, "HYPO71") == 0 ||

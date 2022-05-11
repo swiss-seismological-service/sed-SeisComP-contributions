@@ -30,8 +30,10 @@ extern "C" {
 #include "phaseloclist.h"
 #include "otime_limit.h"
 #include "NLLocLib.h"
+#include "matrix_statistics/matrix_statistics.h"
 
 }
+
 
 #include <seiscomp/logging/log.h>
 #include <seiscomp/core/strings.h>

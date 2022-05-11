@@ -54,7 +54,7 @@ tel: +33(0)493752502  e-mail: anthony@alomax.net  web: http://www.alomax.net
 
 
 #ifdef CUSTOM_ETH
-#define PNAME  "NLLoc(ETH)"
+#define PNAME  "NLLoc(ETH/RCPedit)"
 #else
 #define PNAME  "NLLoc"
 #endif
@@ -68,7 +68,7 @@ tel: +33(0)493752502  e-mail: anthony@alomax.net  web: http://www.alomax.net
 #include "otime_limit.h"
 #include "NLLocLib.h"
 
-#include "io/json_io.h"
+//#include "io/json_io.h"
 
 #ifdef CUSTOM_ETH
 #include "custom_eth/eth_functions.h"
