@@ -24,3 +24,4 @@ int matrix_double_check_diagonal_non_zero_inverse(MatrixDouble mtx_original, int
 int square_inverse_not_ok(MatrixDouble inverse_mtrx, MatrixDouble original_mtx, int nsize, int verbose);
 
 void svd_helper(MatrixDouble A_matrix, int num_rows, int num_cols, VectorDouble S_vector, MatrixDouble V_matrix);
+int real_symmetric_eigen_helper(MatrixDouble A_matrix, int isize, VectorDouble S_vector, MatrixDouble V_matrix);
