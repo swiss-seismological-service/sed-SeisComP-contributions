@@ -68,7 +68,7 @@ tel: +33(0)493752502  e-mail: anthony@alomax.net  web: http://www.alomax.net
 #include "otime_limit.h"
 #include "NLLocLib.h"
 
-#include "io/json_io.h"
+//#include "io/json_io.h"
 
 #ifdef CUSTOM_ETH
 #include "custom_eth/eth_functions.h"
@@ -203,24 +203,6 @@ int NLLoc
         fp_control = NULL;
     }
 
-    // test if control file is nll-control JSON
-    int is_nll_control_json_file = 0;
-    if (fp_control != NULL) {
-        if ((is_nll_control_json_file = is_nll_control_json(fp_control))) {
-            // read nll-control JSON into array of NLLoc control file lines
-            param_line_array = read_nll_control_json(fp_control, &n_param_lines);
-            if (fp_control != NULL) {
-                fclose(fp_control);
-                NumFilesOpen--;
-            }
-            if (param_line_array == NULL) {
-                nll_puterr("FATAL ERROR: reading nll-control JSON file.");
-                return_value = EXIT_ERROR_FILEIO;
-                goto cleanup_return;
-            }
-        }
-    }
-
 
 #ifdef CUSTOM_ETH
     /* SH 02/27/2004
@@ -277,7 +259,6 @@ int NLLoc
         goto cleanup_return;
 #endif
     }
-
 
 
     // get path to output files
