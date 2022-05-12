@@ -2447,35 +2447,15 @@ int GetNextObs(HypoDesc* phypo, FILE* fp_obs, ArrivalDesc *arrival, char* ftype_
     int ioff;
 
     static char line[MAXLINE_LONG];
-
-    static int date_saved, year_save, month_save, day_save;
     static int check_for_S_arrival;
-
     static int in_hypocenter_event;
 
-    int ifound;
-
-    int itest, itest2;
+    int ifound; itest, itest2;
 
     // ETH LOC format
     char eth_line_key[MAXSTRING];
     int eth_use_loc = 0, eth_use_mag = 0;
     double vpvs;
-
-    // NEIC / ISC format
-    static char last_label[10];
-    char cmonth[4];
-    char* pchr;
-    static int origin_hour = 0;
-
-    // ISC format
-    char isc_time_str[10];
-
-    // DD
-    static int hypo_cc_flag;
-    static long int dd_event_id_1, dd_event_id_2;
-    static double dd_otime_corr;
-    double tt_sta1, tt_sta2;
 
     // HYPOINVERSE_Y2000_ARC
     int idummy;
