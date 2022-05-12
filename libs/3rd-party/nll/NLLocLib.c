@@ -103,9 +103,6 @@ e-mail: anthony@alomax.net  web: http://www.alomax.net
  */
 
 
-
-
-
 #include "GridLib.h"
 #include "ran1/ran1.h"
 #include "velmod.h"
@@ -114,7 +111,6 @@ e-mail: anthony@alomax.net  web: http://www.alomax.net
 #include "phaseloclist.h"
 #include "otime_limit.h"
 #include "NLLocLib.h"
-//#include "io/json_io.h"
 
 #ifdef CUSTOM_ETH
 #include "custom_eth/eth_functions.h"
@@ -2798,282 +2794,7 @@ int GetNextObs(HypoDesc* phypo, FILE* fp_obs, ArrivalDesc *arrival, char* ftype_
         Qual2Err(arrival);
 
         return (istat);
-    } else if (strcmp(ftype_obs, "HYPOINVERSE_Y2000_ARC") == 0) {
-
-        /*
-                        Y2000 (station) archive format
-                        StartCol. Len. FortranFormat Data (* revised from pre-Y2000 format)
-                        1 5 A5 5-letter station site code, left justified. *
-                        6 2 A2 2-letter seismic network code. *
-                        8 1 1X Blank *
-                        9 1 A1 One letter station component code.
-                        10 3 A3 3-letter station component code. *
-                        13 1 1X Blank *
-                        14 2 A2 P remark such as "IP".
-                        16 1 A1 P first motion.
-                        17 1 I1 Assigned P weight code.
-                        18 4 I4 Year. *
-                        22 8 4I2 Month, day, hour and minute.
-                        30 5 F5.2 Second of P arrival.
-                        35 4 F4.2 P travel time residual.
-                        39 3 F3.2 P weight actually used.
-                        42 5 F5.2 Second of S arrival.
-                        47 2 A2 S remark such as "ES".
-                        49 1 1X Blank
-                        50 1 I1 Assigned S weight code.
-                        51 4 F4.2 S travel time residual.
-                        55 7 F7.2 Amplitude (Normally peak-to-peak). *
-                        62 2 I2 Amp units code. 0=PP mm, 1=0 to peak mm (UCB), 2=digital counts. *
-                        64 3 F3.2 S weight actually used.
-                        67 4 F4.2 P delay time.
-                        71 4 F4.2 S delay time.
-                        75 4 F4.1 Epicentral distance (km).
-                        79 3 F3.0 Emergence angle at source.
-                        82 1 I1 Amplitude magnitude weight code.
-                        83 1 I1 Duration magnitude weight code.
-                        84 3 F3.2 Period at which the amplitude was measured for this station.
-                        87 1 A1 1-letter station remark.
-                        88 4 F4.0 Coda duration in seconds.
-                        92 3 F3.0 Azimuth to station in degrees E of N.
-                        95 3 F3.2 Duration magnitude for this station. *
-                        98 3 F3.2 Amplitude magnitude for this station. *
-                        101 4 F4.3 Importance of P arrival.
-                        105 4 F4.3 Importance of S arrival.
-                        109 1 A1 Data source code.
-                        110 1 A1 Label code for duration magnitude from FC1 or FC2 command.
-                        111 1 A1 Label code for amplitude magnitude from XC1 or XC2 command.
-                        112 2 A2 2-letter station location code (component extension).
-                        113 is the last filled column.
-
-        Example HYPOINVERSE doc
-                :
-        19991201 0 8 64735 5775120 3094 355 0 160
-        PST NC VVHZ IPD0199912010008 7.56 00 0 4 0 0
-        PMM NC VVHZ EPU2199912010008 7.71 700 0 4 19M 0 0
-        PVC NC VVHZ IPD1199912010008 7.81 8.98ESD2 00 0 0 6 0
-        PPC NC VVHZ IPU0199912010008 8.13 9.19ESU2 1600 0 4 7M 0 0
-        PHP NC VVHZ EPU2199912010008 8.39 00 0 4 0 0
-        PSM NC VVHZ EPU2199912010008 9.98 00 0 4 0 0
-        BMS NC VVHZ P 419991201000899.99 00 0 4 22 0
-        21069577
-
-        Example INGV:
-
-        200512132009226042 4387 12E4874   90  0 15137 24 11620767 507 7814 311298    203    0 301 469 12   0 120  0 15Ita WW   16    0  0   0  0    141429 298 120   0   01
-        $1
-        LNSS IV EBHE P U0200512132009 2792  62181    0   0   0      0 0  0   0   0 235 9200  0   59127315  0 498   0W     0
-        $   6 5.20 1.80 6.40 2.65 0.06 NSR0  -47 PHP0  820 151886 19 943 23 497 31 329 39 159 47  91
-        LNSS IV EBHE P U2200512132009 2794  64 90    0   0   0      0 0  0   0   0 235 9200  0   72127334  0 124   0W     0
-        $   6 5.18 1.80 5.50 2.05 0.04 NSR0  -47 PHP0  954 151220 19 636 23 531 31 289 39 172 47 105
-        MNS  IV EBHE P  3200512132009 2982 -75 36    0   0   0      0 0  0   0   0 399 9100  0   49196299  0  40   0W     0
-        $   6 4.91 1.80 5.38 2.18 0.07 NSR0  -43 PHP0   38 15 525 19 483 23 258 31 168 39  80 43  66
-
-         */
-
-        if (check_for_S_arrival) {
-            /* check for S phase input in last input line read */
-
-            // check for zero or blank S phase time and remark
-            // 42 5 F5.2 Second of S arrival.
-            // 47 2 A2 S remark such as "ES".
-            istat = ReadFortranString(line, 42, 7, chrtmp);
-            //printf("chrtmp <%s>\n", chrtmp);
-            if (istat > 0
-                    && strncmp(chrtmp, "     ", 5) != 0
-                    && strncmp(chrtmp, "    0", 5) != 0
-                    && strncmp(chrtmp + 5, "  ", 2) != 0) {
-                //printf("ACCEPT chrtmp <%s>\n", chrtmp);
-                // read S phase input in last input line read
-                istat = ReadFortranString(line, 1, 5, arrival->label);
-                TrimString(arrival->label);
-                istat = ReadFortranString(line, 6, 2, arrival->network); // network code ignored in NLL
-                TrimString(arrival->network);
-                istat += ReadFortranString(line, 9, 1, arrival->comp);
-                TrimString(arrival->comp);
-                istat += ReadFortranString(line, 10, 3, arrival->inst);
-                TrimString(arrival->inst);
-                // try and decode S remark
-                arrival->onset[0] = ARRIVAL_NULL_CHR;
-                istat += ReadFortranString(line, 47, 2, chrtmp);
-                if (chrtmp[0] == 'S' || chrtmp[0] == 's') {
-                    strcpy(arrival->phase, chrtmp);
-                    TrimString(arrival->phase);
-                } else if (chrtmp[1] == 'S' || chrtmp[1] == 's') {
-                    arrival->onset[0] = chrtmp[0];
-                    arrival->phase[0] = chrtmp[1];
-                } else {
-                    arrival->phase[0] = 'S';
-                }
-                //istat += ReadFortranString(line, 49, 1, arrival->first_mot);
-                //TrimString(arrival->first_mot);
-                istat += ReadFortranInt(line, 18, 4, &arrival->year);
-                istat += ReadFortranInt(line, 22, 2, &arrival->month);
-                istat += ReadFortranInt(line, 24, 2, &arrival->day);
-                istat += ReadFortranInt(line, 26, 2, &arrival->hour);
-                istat += ReadFortranInt(line, 28, 2, &arrival->min);
-                istat += ReadFortranReal(line, 42, 5, &arrival->sec);
-                /* 20090126 AJL bug fix - original version fails if integer sec < 1.00
-                // check for integer sec format
-                        if (arrival->sec > 99.999)
-                        arrival->sec /= 100.0;
-                 */
-                strncpy(chrtmp, line + 41, 5);
-                chrtmp[5] = '\0';
-                //printf("%s", line);
-                //printf("chrtmp=|%s| arrival->sec=%f", chrtmp, arrival->sec);
-                if (strchr(chrtmp, '.') == NULL)
-                    arrival->sec /= 100.0;
-                //printf(" -> arrival->sec=%f\n", arrival->sec);
-                // END - 20090126 AJL bug fix
-                istat += ReadFortranReal(line, 30, 5, &psec);
-                // 2020/08/11 - JMS
-                // test for dummy P-phase (psec = 9999), if yes, ignore psec
-                ReadFortranInt(line, 30, 5, &itest);
-                if (itest == 9999) {
-                    psec = 0.0;
-                }
-                // END - 2020/08/11 - JMS
-                /* 20090126 AJL bug fix - original version fails if integer sec < 1.00
-                // check for integer sec format
-                                if (psec > 99.999)
-                                psec /= 100.0;
-                 */
-                strncpy(chrtmp, line + 29, 5);
-                chrtmp[5] = '\0';
-                //printf("%s", line);
-                //printf("chrtmp=|%s| arrival->sec=%f", chrtmp, arrival->sec);
-                if (strchr(chrtmp, '.') == NULL)
-                    psec /= 100.0;
-                //printf(" -> arrival->sec=%f\n", arrival->sec);
-                // END - 20090126 AJL bug fix
-                // check for P second >= 60.0 - not needed (?)
-                if (psec >= 60.0 && arrival->sec < 60.0)
-                    arrival->sec += 60.0;
-                istat += ReadFortranInt(line, 50, 1, &arrival->quality);
-                // read optional amplitude/period fields - read with P
-                //istat += ReadFortranReal(line, 55, 7, &arrival->amplitude);
-                //istat += ReadFortranReal(line, 84, 3, &arrival->period);
-                //istat += ReadFortranReal(line, 88, 4, &arrival->coda_dur);
-            }
-
-            // check for valid S arrival input found
-            if (istat == 12
-                    && IsPhaseID(arrival->phase, "S")
-                    && IsGoodDate(arrival->year, arrival->month, arrival->day)) {
-                // convert quality to error
-                Qual2Err(arrival);
-                line[0] = '\0';
-                check_for_S_arrival = 0;
-                return (istat);
-            } else { // not found
-                check_for_S_arrival = 0;
-                return (OBS_FILE_SKIP_INPUT_LINE);
-            }
-
-        }
-
-
-        // read next line
-        cstat = fgets(line, MAXLINE_LONG, fp_obs);
-        if (cstat == NULL)
-            return (OBS_FILE_END_OF_INPUT);
-
-        // check for shawdow card - line starting with $
-        if (strncmp(line, "$", 1) == 0)
-            return (OBS_FILE_SKIP_INPUT_LINE);
-
-        // check for summary header - line starting with year
-        if (ReadFortranInt(line, 1, 4, &idummy) == 1 && idummy > 0) {
-            strcpy(HypoInverseArchiveSumHdr, line);
-            //printf("HypoInverseArchiveSumHdr:\n|%s|\n", HypoInverseArchiveSumHdr);
-            return (OBS_FILE_SKIP_INPUT_LINE);
-        }
-
-        // 2020/08/11 - JMS
-        // check for dummy P-phase (second 9999 and weight of 4)
-        ReadFortranInt(line, 30, 5, &itest);
-        ReadFortranInt(line, 17, 1, &itest2);
-        // if dummy P-phase, skip reading and try read S-phase
-        if (itest == 9999 && itest2 == 4) {
-            check_for_S_arrival = 1;
-            return (OBS_FILE_SKIP_INPUT_LINE);
-        } else {
-            // read formatted P arrival input
-            istat = ReadFortranString(line, 1, 5, arrival->label);
-            TrimString(arrival->label);
-            istat = ReadFortranString(line, 6, 2, arrival->network); // network code ignored in NLL
-            TrimString(arrival->network);
-            istat += ReadFortranString(line, 9, 1, arrival->comp);
-            TrimString(arrival->comp);
-            istat += ReadFortranString(line, 10, 3, arrival->inst);
-            TrimString(arrival->inst);
-            // try and decode P remark
-            arrival->onset[0] = ARRIVAL_NULL_CHR;
-            istat += ReadFortranString(line, 14, 2, chrtmp);
-            if (chrtmp[0] == 'P' || chrtmp[0] == 'p') {
-                strcpy(arrival->phase, chrtmp);
-                TrimString(arrival->phase);
-            } else if (chrtmp[1] == 'P' || chrtmp[1] == 'p') {
-                arrival->onset[0] = chrtmp[0];
-                arrival->phase[0] = chrtmp[1];
-            } else {
-                arrival->phase[0] = 'P';
-            }
-            TrimString(arrival->phase);
-            istat += ReadFortranString(line, 16, 1, arrival->first_mot);
-            TrimString(arrival->first_mot);
-            istat += ReadFortranInt(line, 18, 4, &arrival->year);
-            istat += ReadFortranInt(line, 22, 2, &arrival->month);
-            istat += ReadFortranInt(line, 24, 2, &arrival->day);
-            istat += ReadFortranInt(line, 26, 2, &arrival->hour);
-            istat += ReadFortranInt(line, 28, 2, &arrival->min);
-            istat += ReadFortranReal(line, 30, 5, &arrival->sec);
-            /* 20090126 AJL bug fix - original version fails if integer sec < 1.00
-            // check for integer sec format
-            if (arrival->sec > 99.999)
-                    arrival->sec /= 100.0;
-             */
-            strncpy(chrtmp, line + 29, 5);
-            chrtmp[5] = '\0';
-            //printf("%s", line);
-            //printf("chrtmp=|%s| arrival->sec=%f", chrtmp, arrival->sec);
-            if (strchr(chrtmp, '.') == NULL)
-                arrival->sec /= 100.0;
-            //printf(" -> arrival->sec=%f\n", arrival->sec);
-            // END - 20090126 AJL bug fix
-            istat += ReadFortranInt(line, 17, 1, &arrival->quality);
-
-            if (istat != 12) {
-                line[0] = '\0';
-                return (OBS_FILE_END_OF_EVENT);
-            }
-
-            // read optional amplitude/period fields
-            istat += ReadFortranReal(line, 55, 7, &arrival->amplitude);
-            istat += ReadFortranReal(line, 84, 3, &arrival->period);
-            istat += ReadFortranReal(line, 88, 4, &arrival->coda_dur);
-
-
-            /* check for valid phase code */
-            //		if (IsPhaseID(arrival->phase, "P")) {
-            //strcpy(arrival->phase, "P");
-            check_for_S_arrival = 1;
-
-            //		} else if (IsPhaseID(arrival->phase, "S")) {
-            //strcpy(arrival->phase, "S");
-            //			check_for_S_arrival = 0;
-            //		} else
-            //			return(OBS_FILE_END_OF_EVENT);
-
-            if (!IsGoodDate(arrival->year, arrival->month, arrival->day))
-                return (OBS_FILE_END_OF_EVENT);
-
-            // convert quality to error
-            Qual2Err(arrival);
-
-            return (istat);
-        }
-
+        
     } else if (strcmp(ftype_obs, "SED_LOC") == 0 || strcmp(ftype_obs, "SED_LOC_ERR") == 0) {
 
         /* example:
@@ -7274,8 +6995,6 @@ double CalcSolutionQuality_L1_NORM(int num_arrivals, ArrivalDesc *arrival,
 }
 
 
-
-
 /** function to calculate probability density */
 
 /*	sum of individual L2 residual probablities */
@@ -7398,7 +7117,6 @@ double CalcSolutionQuality_GAU_TEST(int num_arrivals, ArrivalDesc *arrival,
 
         return (-1.0);
     }
-
 
 
 }

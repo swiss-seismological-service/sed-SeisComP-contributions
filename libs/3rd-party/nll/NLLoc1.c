@@ -68,7 +68,6 @@ tel: +33(0)493752502  e-mail: anthony@alomax.net  web: http://www.alomax.net
 #include "otime_limit.h"
 #include "NLLocLib.h"
 
-//#include "io/json_io.h"
 
 #ifdef CUSTOM_ETH
 #include "custom_eth/eth_functions.h"
@@ -710,20 +709,6 @@ cleanup_return:
     if (bp_memory_stream != NULL) {
         free(bp_memory_stream);
         bp_memory_stream = NULL;
-    }
-
-    // clean up memory allocations in read_nll_control_json
-    if (is_nll_control_json_file) {
-        for (int i = 0; i < n_param_lines; i++) {
-            if (param_line_array[i] != NULL) {
-                free(param_line_array[i]);
-            }
-        }
-        n_param_lines = 0;
-        if (param_line_array != NULL) {
-            free(param_line_array);
-        }
-        param_line_array = NULL;
     }
 
     return (return_value);
