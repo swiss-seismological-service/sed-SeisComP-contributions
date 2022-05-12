@@ -2447,21 +2447,23 @@ int GetNextObs(HypoDesc* phypo, FILE* fp_obs, ArrivalDesc *arrival, char* ftype_
     int ioff;
 
     static char line[MAXLINE_LONG];
+
+    static int date_saved;
     static int check_for_S_arrival;
+
     static int in_hypocenter_event;
 
-    int ifound; itest, itest2;
+    int ifound;
+
 
     // ETH LOC format
     char eth_line_key[MAXSTRING];
     int eth_use_loc = 0, eth_use_mag = 0;
     double vpvs;
 
-    // HYPOINVERSE_Y2000_ARC
-    int idummy;
 
     // SAFOD
-    int yearday;
+
     double left_uncertainty, right_uncertainty;
 
 
