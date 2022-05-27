@@ -106,6 +106,7 @@ class NLLocator : public Seiscomp::Seismology::LocatorInterface {
 			std::string earthModelID;
 			std::string methodID;
 			std::string tablePath;
+			std::string stationNameFormat;
 			std::string controlFile;
 			RegionPtr   region;
 		};

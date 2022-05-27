@@ -41,6 +41,7 @@ extern "C" {
 #include <seiscomp/math/geo.h>
 #include <seiscomp/math/vector3.h>
 #include <seiscomp/utils/files.h>
+#include <seiscomp/utils/replace.h>
 
 #include <fstream>
 #include <sstream>
@@ -298,6 +299,32 @@ double normalizeLon(double lon) {
 
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+std::string stationName(const Seiscomp::DataModel::Pick *pick, const std::string& rule)
+{
+  struct Resolver : public Seiscomp::Util::VariableResolver {
+    Resolver(const Seiscomp::DataModel::Pick &pick)
+     : _pick(pick) {}
+    bool resolve(std::string& variable) const {
+      if ( variable == "NET" )
+        variable = _pick.waveformID().networkCode();
+      else if ( variable == "STA" )
+        variable = _pick.waveformID().stationCode();
+      else if ( variable == "LOC" )
+        variable = _pick.waveformID().locationCode();
+      else
+        return false;
+      return true;
+    }
+    const Seiscomp::DataModel::Pick &_pick;
+  };
+  return Seiscomp::Util::replace(rule, Resolver(*pick), "@", "@", "");
+}
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 } // private namespace
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -425,6 +452,9 @@ bool NLLocator::init(const Config::Config &config) {
 
 		try { prof.tablePath = env->absolutePath(config.getString(prefix + "tablePath")); }
 		catch ( ... ) {}
+
+		try { prof.stationNameFormat = config.getString(prefix + "stationNameFormat"); }
+		catch ( ... ) { prof.stationNameFormat = "@STA@"; } 
 
 		if ( prof.tablePath.empty() ) {
 			SEISCOMP_ERROR("NonLinLoc.profile.%s: none or empty tablePath", it->c_str());
@@ -639,10 +669,11 @@ Origin* NLLocator::locate(PickList &pickList) {
 
 	SEISCOMP_DEBUG("requested earth model: %s", _currentProfile->earthModelID.c_str());
 
-	string earthModelPath;
+	string earthModelPath, stationNameFormat;
 	bool globalMode = false;
 
 	earthModelPath = _currentProfile->tablePath;
+	stationNameFormat = _currentProfile->stationNameFormat;
 	globalMode = _currentProfile->region->isGlobal();
 
 	if ( earthModelPath.empty() ) {
@@ -696,7 +727,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 
 		// create the LOCSRCE entries 
 		params.push_back(string("LOCSRCE ") +
-		                 pick->waveformID().stationCode() +
+		                 stationName(pick, stationNameFormat) +
 		                 " LATLON " +
 		                 toString(sloc->latitude()) + " " +
 		                 toString(sloc->longitude()) + " 0 " +
@@ -706,7 +737,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 		ss.setf(ios_base::scientific, ios_base::floatfield);
 
 		ss // station code
-		   << left << setw(6) << pick->waveformID().stationCode()
+		   << left << setw(10) << stationName(pick, stationNameFormat)
 		   << internal << setw(0) << " "
 		   // instrument
 		   << "? "
@@ -879,7 +910,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 
 					dist = Math::Geo::deg2km(dist);
 					if ( dist > _distanceCutOff )
-						replaceWeight(obs, pick->waveformID().stationCode(), 0);
+						replaceWeight(obs, stationName(pick, stationNameFormat), 0);
 				}
 
 				// Rebuild observation buffer
