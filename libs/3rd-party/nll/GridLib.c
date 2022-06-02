@@ -4266,7 +4266,7 @@ Mtrx3D CalcCovariance(GridDesc* pgrid, Vect3D* pexpect, FILE* fpgrid) {
 
 Mtrx3D CalcCovarianceSamples(float* fdata, int nSamples, Vect3D* pexpect) {
 
-    printf("GeometryMode %s\n", GeometryMode == MODE_GLOBAL ? "MODE_GLOBAL" : "MODE_RECT");
+    //printf("GeometryMode %s\n", GeometryMode == MODE_GLOBAL ? "MODE_GLOBAL" : "MODE_RECT");
     if (GeometryMode == MODE_GLOBAL)
         return (CalcCovarianceSamplesGlobal(fdata, nSamples, pexpect));
     else
