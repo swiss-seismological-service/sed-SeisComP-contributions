@@ -21,6 +21,7 @@
 
 #define SEISCOMP_COMPONENT DataModel
 #include <seiscomp/datamodel/strongmotion/surfacerupture.h>
+#include <seiscomp/datamodel/version.h>
 #include <seiscomp/datamodel/metadata.h>
 #include <seiscomp/logging/log.h>
 
@@ -185,7 +186,7 @@ SurfaceRupture& SurfaceRupture::operator=(const SurfaceRupture& other) {
 void SurfaceRupture::serialize(Archive& ar) {
 	// Do not read/write if the archive's version is higher than
 	// currently supported
-	if ( ar.isHigherVersion<0,11>() ) {
+	if ( ar.isHigherVersion<Version::Major,Version::Minor>() ) {
 		SEISCOMP_ERROR("Archive version %d.%d too high: SurfaceRupture skipped",
 		               ar.versionMajor(), ar.versionMinor());
 		ar.setValidity(false);

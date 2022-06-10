@@ -25,6 +25,7 @@
 #include <seiscomp/datamodel/strongmotion/record.h>
 #include <seiscomp/datamodel/strongmotion/strongorigindescription.h>
 #include <algorithm>
+#include <seiscomp/datamodel/version.h>
 #include <seiscomp/datamodel/metadata.h>
 #include <seiscomp/logging/log.h>
 
@@ -66,18 +67,17 @@ StrongMotionParameters::StrongMotionParameters(const StrongMotionParameters& oth
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 StrongMotionParameters::~StrongMotionParameters() {
-	std::for_each(_simpleFilters.begin(), _simpleFilters.end(),
-	              std::compose1(std::bind2nd(std::mem_fun(&SimpleFilter::setParent),
-	                                         (PublicObject*)NULL),
-	                            std::mem_fun_ref(&SimpleFilterPtr::get)));
-	std::for_each(_records.begin(), _records.end(),
-	              std::compose1(std::bind2nd(std::mem_fun(&Record::setParent),
-	                                         (PublicObject*)NULL),
-	                            std::mem_fun_ref(&RecordPtr::get)));
-	std::for_each(_strongOriginDescriptions.begin(), _strongOriginDescriptions.end(),
-	              std::compose1(std::bind2nd(std::mem_fun(&StrongOriginDescription::setParent),
-	                                         (PublicObject*)NULL),
-	                            std::mem_fun_ref(&StrongOriginDescriptionPtr::get)));
+	for ( auto &simpleFilter : _simpleFilters ) {
+		simpleFilter->setParent(nullptr);
+	}
+
+	for ( auto &record : _records ) {
+		record->setParent(nullptr);
+	}
+
+	for ( auto &strongOriginDescription : _strongOriginDescriptions ) {
+		strongOriginDescription->setParent(nullptr);
+	}
 }
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -645,7 +645,7 @@ bool StrongMotionParameters::removeStrongOriginDescription(size_t i) {
 void StrongMotionParameters::serialize(Archive& ar) {
 	// Do not read/write if the archive's version is higher than
 	// currently supported
-	if ( ar.isHigherVersion<0,11>() ) {
+	if ( ar.isHigherVersion<Version::Major,Version::Minor>() ) {
 		SEISCOMP_ERROR("Archive version %d.%d too high: StrongMotionParameters skipped",
 		               ar.versionMajor(), ar.versionMinor());
 		ar.setValidity(false);

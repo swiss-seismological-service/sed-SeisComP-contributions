@@ -25,6 +25,7 @@
 #include <seiscomp/datamodel/strongmotion/eventrecordreference.h>
 #include <seiscomp/datamodel/strongmotion/rupture.h>
 #include <algorithm>
+#include <seiscomp/datamodel/version.h>
 #include <seiscomp/datamodel/metadata.h>
 #include <seiscomp/logging/log.h>
 
@@ -77,14 +78,13 @@ StrongOriginDescription::StrongOriginDescription(const std::string& publicID)
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 StrongOriginDescription::~StrongOriginDescription() {
-	std::for_each(_eventRecordReferences.begin(), _eventRecordReferences.end(),
-	              std::compose1(std::bind2nd(std::mem_fun(&EventRecordReference::setParent),
-	                                         (PublicObject*)NULL),
-	                            std::mem_fun_ref(&EventRecordReferencePtr::get)));
-	std::for_each(_ruptures.begin(), _ruptures.end(),
-	              std::compose1(std::bind2nd(std::mem_fun(&Rupture::setParent),
-	                                         (PublicObject*)NULL),
-	                            std::mem_fun_ref(&RupturePtr::get)));
+	for ( auto &eventRecordReference : _eventRecordReferences ) {
+		eventRecordReference->setParent(nullptr);
+	}
+
+	for ( auto &rupture : _ruptures ) {
+		rupture->setParent(nullptr);
+	}
 }
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -642,7 +642,7 @@ bool StrongOriginDescription::removeRupture(size_t i) {
 void StrongOriginDescription::serialize(Archive& ar) {
 	// Do not read/write if the archive's version is higher than
 	// currently supported
-	if ( ar.isHigherVersion<0,11>() ) {
+	if ( ar.isHigherVersion<Version::Major,Version::Minor>() ) {
 		SEISCOMP_ERROR("Archive version %d.%d too high: StrongOriginDescription skipped",
 		               ar.versionMajor(), ar.versionMinor());
 		ar.setValidity(false);

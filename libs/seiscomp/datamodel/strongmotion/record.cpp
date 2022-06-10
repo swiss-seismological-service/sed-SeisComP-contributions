@@ -24,6 +24,7 @@
 #include <seiscomp/datamodel/strongmotion/strongmotionparameters.h>
 #include <seiscomp/datamodel/strongmotion/peakmotion.h>
 #include <algorithm>
+#include <seiscomp/datamodel/version.h>
 #include <seiscomp/datamodel/metadata.h>
 #include <seiscomp/logging/log.h>
 
@@ -82,14 +83,13 @@ Record::Record(const std::string& publicID)
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Record::~Record() {
-	std::for_each(_simpleFilterChainMembers.begin(), _simpleFilterChainMembers.end(),
-	              std::compose1(std::bind2nd(std::mem_fun(&SimpleFilterChainMember::setParent),
-	                                         (PublicObject*)NULL),
-	                            std::mem_fun_ref(&SimpleFilterChainMemberPtr::get)));
-	std::for_each(_peakMotions.begin(), _peakMotions.end(),
-	              std::compose1(std::bind2nd(std::mem_fun(&PeakMotion::setParent),
-	                                         (PublicObject*)NULL),
-	                            std::mem_fun_ref(&PeakMotionPtr::get)));
+	for ( auto &simpleFilterChainMember : _simpleFilterChainMembers ) {
+		simpleFilterChainMember->setParent(nullptr);
+	}
+
+	for ( auto &peakMotion : _peakMotions ) {
+		peakMotion->setParent(nullptr);
+	}
 }
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -818,7 +818,7 @@ bool Record::removePeakMotion(size_t i) {
 void Record::serialize(Archive& ar) {
 	// Do not read/write if the archive's version is higher than
 	// currently supported
-	if ( ar.isHigherVersion<0,11>() ) {
+	if ( ar.isHigherVersion<Version::Major,Version::Minor>() ) {
 		SEISCOMP_ERROR("Archive version %d.%d too high: Record skipped",
 		               ar.versionMajor(), ar.versionMinor());
 		ar.setValidity(false);

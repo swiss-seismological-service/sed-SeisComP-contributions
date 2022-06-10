@@ -24,6 +24,7 @@
 #include <seiscomp/datamodel/strongmotion/strongmotionparameters.h>
 #include <seiscomp/datamodel/strongmotion/filterparameter.h>
 #include <algorithm>
+#include <seiscomp/datamodel/version.h>
 #include <seiscomp/datamodel/metadata.h>
 #include <seiscomp/logging/log.h>
 
@@ -73,10 +74,9 @@ SimpleFilter::SimpleFilter(const std::string& publicID)
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 SimpleFilter::~SimpleFilter() {
-	std::for_each(_filterParameters.begin(), _filterParameters.end(),
-	              std::compose1(std::bind2nd(std::mem_fun(&FilterParameter::setParent),
-	                                         (PublicObject*)NULL),
-	                            std::mem_fun_ref(&FilterParameterPtr::get)));
+	for ( auto &filterParameter : _filterParameters ) {
+		filterParameter->setParent(nullptr);
+	}
 }
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -429,7 +429,7 @@ bool SimpleFilter::removeFilterParameter(size_t i) {
 void SimpleFilter::serialize(Archive& ar) {
 	// Do not read/write if the archive's version is higher than
 	// currently supported
-	if ( ar.isHigherVersion<0,11>() ) {
+	if ( ar.isHigherVersion<Version::Major,Version::Minor>() ) {
 		SEISCOMP_ERROR("Archive version %d.%d too high: SimpleFilter skipped",
 		               ar.versionMajor(), ar.versionMinor());
 		ar.setValidity(false);
