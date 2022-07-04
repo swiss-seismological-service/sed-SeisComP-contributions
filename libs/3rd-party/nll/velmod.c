@@ -32,7 +32,7 @@
 
 #undef EXTERN_TXT
 #ifdef EXTERN_MODE
-#define	EXTERN_TXT extern
+#define EXTERN_TXT extern
 #else
 #define EXTERN_TXT
 #endif
@@ -126,13 +126,7 @@ int read_vel_mod_input(FILE* fp_input, char* param, char* line, int istat, int i
 
 /* function to get velocity at location */
 
-INLINE double get_vel(xpos, ypos, zpos, wavetype, density, idensity, imodel)
-double xpos, ypos, zpos;
-char wavetype;
-double *density;
-int idensity;
-int *imodel;
-{
+double get_vel(double xpos, double ypos, double zpos, char wavetype, double *density, int idensity, int *imodel) {
     int iden;
     double vel;
 
@@ -187,15 +181,7 @@ int *imodel;
 
 /* function to calculate velocity from gradient layer model */
 
-INLINE double get_layer_vel(depth, wavetype, pm, nlayer, density, iden, imodel)
-double depth;
-char wavetype;
-struct layer *pm;
-int nlayer;
-double *density;
-int iden;
-int *imodel;
-{
+double get_layer_vel(double depth, char wavetype, struct layer *pm, int nlayer, double *density, int iden, int *imodel) {
     int n;
     double vel = -1.0;
 
@@ -230,14 +216,7 @@ int *imodel;
 
 /* function to calculate velocity from disk model */
 
-INLINE double get_disk_vel(xpos, zpos, wavetype, pd, ndisk, density, iden)
-double xpos, zpos;
-char wavetype;
-struct disk *pd;
-int ndisk;
-double *density;
-int iden;
-{
+double get_disk_vel(double xpos, double zpos, char wavetype, struct disk *pd, int ndisk, double *density, int iden) {
     int n;
     double xtemp, ztemp;
     double vel = -1.0;
@@ -261,7 +240,7 @@ int iden;
 
 /* function to calculate velocity from surface model */
 
-INLINE double get_surface_vel(double xpos, double ypos, double zpos, char wavetype,
+double get_surface_vel(double xpos, double ypos, double zpos, char wavetype,
         struct surface *psur, int nsurface, double *density, int iden) {
     int n;
     double vel = -1.0;
@@ -299,7 +278,8 @@ INLINE double get_surface_vel(double xpos, double ypos, double zpos, char wavety
 
 /*** function to get surface boundary z level */
 
-INLINE double get_surface_z(int nsurface, double x, double y) {
+double get_surface_z(int nsurface, double x, double y) {
+
     long ioffset;
     int ixnode, iynode;
     double zdepth;
@@ -329,14 +309,7 @@ INLINE double get_surface_z(int nsurface, double x, double y) {
 
 /* function to calculate velocity from rough layer model */
 
-INLINE double get_rough_vel(xpos, zpos, wavetype, pr, nrough, density, iden)
-double xpos, zpos;
-char wavetype;
-struct rough_bndry *pr;
-int nrough;
-double *density;
-int iden;
-{
+double get_rough_vel(double xpos, double zpos, char wavetype, struct rough_bndry *pr, int nrough, double *density, int iden) {
     int n;
     double vel = -1.0;
 
@@ -363,14 +336,7 @@ int iden;
 
 /* function to calculate velocity from sphere model */
 
-INLINE double get_sphere_vel(xpos, ypos, zpos, wavetype, pd, nsphere, density, iden)
-double xpos, ypos, zpos;
-char wavetype;
-struct sphere *pd;
-int nsphere;
-double *density;
-int iden;
-{
+double get_sphere_vel(double xpos, double ypos, double zpos, char wavetype, struct sphere *pd, int nsphere, double *density, int iden) {
     int n;
     double xtemp, ytemp, ztemp;
     double vel = -1.0;
@@ -586,7 +552,7 @@ int read_grd_surface(struct surface *ps, int imessage, int force_km) {
     }
     if (imessage)
         printf("sscanf istat=%d\n", istat);
-        printf("%d\t\t\t/* 0 for grid line reg, 1 for pixel reg */\n",
+    printf("%d\t\t\t/* 0 for grid line reg, 1 for pixel reg */\n",
             (ps->hdr)->node_offset);
 
     if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL)
@@ -595,7 +561,7 @@ int read_grd_surface(struct surface *ps, int imessage, int force_km) {
 
     if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL)
         return (-1);
-    istat = sscanf(hline, "%s x_min: %lf x_max: %lf x_inc: %lf units: %s nx: %d",
+    istat = sscanf(hline, "%s x_min: %lf x_max: %lf x_inc: %lf %*s %s nx: %d",
             filename, &(ps->hdr)->x_min, &(ps->hdr)->x_max, &(ps->hdr)->x_inc,
             (ps->hdr)->x_units, &(ps->hdr)->nx);
     if (imessage) {
@@ -610,7 +576,7 @@ int read_grd_surface(struct surface *ps, int imessage, int force_km) {
 
     if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL)
         return (-1);
-    istat = sscanf(hline, "%s y_min: %lf y_max: %lf y_inc: %lf units: %s ny: %d",
+    istat = sscanf(hline, "%s y_min: %lf y_max: %lf y_inc: %lf %*s %s ny: %d",
             filename, &(ps->hdr)->y_min, &(ps->hdr)->y_max, &(ps->hdr)->y_inc,
             (ps->hdr)->y_units, &(ps->hdr)->ny);
     if (imessage) {
@@ -622,9 +588,18 @@ int read_grd_surface(struct surface *ps, int imessage, int force_km) {
         printf("%d\t\t\t/* Number of nodes in the y-dimension */\n", (ps->hdr)->ny);
     }
 
+    // check if km units  // 20161102 AJL - added
+    ps->is_latlon = 1;
+    if (strcmp((ps->hdr)->x_units, "km") == 0 && strcmp((ps->hdr)->y_units, "km") == 0) {
+        ps->is_latlon = 0;
+        printf("/* X/Y grid is kilometers. */\n");
+    } else {
+        printf("/* X/Y grid is lat/lon. */\n");
+    }
+
     if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL)
         return (-1);
-    istat = sscanf(hline, "%s z_min: %lf z_max: %lf units: %s",
+    istat = sscanf(hline, "%s z_min: %lf z_max: %lf %*s %s",
             filename, &(ps->hdr)->z_min, &(ps->hdr)->z_max, (ps->hdr)->z_units);
     if (imessage) {
         printf("sscanf istat=%d\n", istat);
@@ -694,18 +669,36 @@ int read_grd_surface(struct surface *ps, int imessage, int force_km) {
 int read_grd(struct surface *ps, int imessage) {
 
     int istat;
-    long idatasize, npt;
+    long idatasize;
     FILE *fp_grd;
-    char *phline, hline[MAXLINE_LONG], filename[MAXLINE], regstr[MAXLINE];
+    char *phline, hline[MAXLINE_LONG], filename[MAXLINE_LONG], regstr[MAXLINE_LONG];
     char *pchr, *psubstr;
     double zval;
+    char grdfilename[MAXLINE_LONG];
+
+
+    // check if binary file with ascii header file
+    // grd file is GMT grd2xyz -ZTLd binary with matching ASCII GMT grdinfo header file <grd_file>.hdr
+    // 20170911 AJL - added to support compact binary surface files
+    //printf("DEBUG: read_grd: grid filename extension: %s\n", ps->grd_file + (strlen(ps->grd_file) - 4));
+    if (strcmp(ps->grd_file + (strlen(ps->grd_file) - 4), ".bin") == 0) { // grid filename ends in ".bin", assume binary with ascii header
+        ps->isHdrBinaryPair = 1;
+    } else {
+        ps->isHdrBinaryPair = 0;
+    }
 
 
     /* open grd file */
 
-    if ((fp_grd = fopen(ps->grd_file, "r")) == NULL) {
+    if (ps->isHdrBinaryPair) { // 20170911 AJL - added to support compact binary surface files
+        sprintf(grdfilename, "%s.hdr", ps->grd_file);
+    } else {
+        sprintf(grdfilename, "%s", ps->grd_file);
+    }
+
+    if ((fp_grd = fopen(grdfilename, "r")) == NULL) {
         fprintf(stderr, "ERROR: Cannot open surface grd file:\n");
-        fprintf(stderr, "  %s\n", ps->grd_file);
+        fprintf(stderr, "  %s\n", grdfilename);
         return (-1);
     }
 
@@ -718,10 +711,12 @@ int read_grd(struct surface *ps, int imessage) {
     }
 
     if (imessage)
-        printf("\nGMT grd file header:  %s\n", ps->grd_file);
+        printf("\nGMT grd file header:  %s\n", grdfilename);
 
-    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL)
+    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL) {
+        fclose(fp_grd);
         return (-1);
+    }
     if (imessage)
         printf("phline: \"%s\"\n", phline);
     psubstr = strrchr(hline, ':');
@@ -732,8 +727,10 @@ int read_grd(struct surface *ps, int imessage) {
     if (imessage)
         printf("\"%s\"\t\t/* Descriptive title of the data set */\n", (ps->hdr)->title);
 
-    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL)
+    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL) {
+        fclose(fp_grd);
         return (-1);
+    }
     if (imessage)
         printf("phline: \"%s\"\n", phline);
     psubstr = strrchr(hline, ':');
@@ -745,8 +742,10 @@ int read_grd(struct surface *ps, int imessage) {
         printf("\"%s\"\t\t/* Command line that produced the grdfile */\n",
             (ps->hdr)->command);
 
-    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL)
+    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL) {
+        fclose(fp_grd);
         return (-1);
+    }
     if (imessage)
         printf("phline: \"%s\"\n", phline);
     psubstr = strrchr(hline, ':');
@@ -757,8 +756,10 @@ int read_grd(struct surface *ps, int imessage) {
     if (imessage)
         printf("\"%s\"\t\t/* Any additional comments */\n", (ps->hdr)->remark);
 
-    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL)
+    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL) {
+        fclose(fp_grd);
         return (-1);
+    }
     if (imessage)
         printf("phline: \"%s\"\n", phline);
     istat = sscanf(hline, "%s %s", filename, regstr);
@@ -769,22 +770,27 @@ int read_grd(struct surface *ps, int imessage) {
         (ps->hdr)->node_offset = 1;
         ps->pix_shift = 0.0;
     }
-    if (imessage)
+    if (imessage) {
         printf("sscanf istat=%d\n", istat);
         printf("%d\t\t\t/* 0 for grid line reg, 1 for pixel reg */\n",
-            (ps->hdr)->node_offset);
+                (ps->hdr)->node_offset);
+    }
 
-    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL)
+    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL) {
+        fclose(fp_grd);
         return (-1);
+    }
     if (imessage)
         printf("phline: \"%s\"\n", phline);
     /* skip grdfile format # line */
 
-    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL)
+    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL) {
+        fclose(fp_grd);
         return (-1);
+    }
     if (imessage)
         printf("phline: \"%s\"\n", phline);
-    istat = sscanf(hline, "%s x_min: %lf x_max: %lf x_inc: %lf units: %s nx: %d",
+    istat = sscanf(hline, "%s x_min: %lf x_max: %lf x_inc: %lf %*s %s nx: %d",
             filename, &(ps->hdr)->x_min, &(ps->hdr)->x_max, &(ps->hdr)->x_inc,
             (ps->hdr)->x_units, &(ps->hdr)->nx);
     if (imessage) {
@@ -796,11 +802,13 @@ int read_grd(struct surface *ps, int imessage) {
         printf("%d\t\t\t/* Number of nodes in the x-dimension */\n", (ps->hdr)->nx);
     }
 
-    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL)
+    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL) {
+        fclose(fp_grd);
         return (-1);
+    }
     if (imessage)
         printf("phline: \"%s\"\n", phline);
-    istat = sscanf(hline, "%s y_min: %lf y_max: %lf y_inc: %lf units: %s ny: %d",
+    istat = sscanf(hline, "%s y_min: %lf y_max: %lf y_inc: %lf %*s %s ny: %d",
             filename, &(ps->hdr)->y_min, &(ps->hdr)->y_max, &(ps->hdr)->y_inc,
             (ps->hdr)->y_units, &(ps->hdr)->ny);
     if (imessage) {
@@ -812,11 +820,24 @@ int read_grd(struct surface *ps, int imessage) {
         printf("%d\t\t\t/* Number of nodes in the y-dimension */\n", (ps->hdr)->ny);
     }
 
-    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL)
+    // check if km units  // 20161102 AJL - added
+    ps->is_latlon = 1;
+    if (strcmp((ps->hdr)->x_units, "km") == 0 && strcmp((ps->hdr)->y_units, "km") == 0) {
+        ps->is_latlon = 0;
+        if (imessage)
+            printf("/* X/Y grid is kilometers. */\n");
+    } else {
+        if (imessage)
+            printf("/* X/Y grid is lat/lon. */\n");
+    }
+
+    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL) {
+        fclose(fp_grd);
         return (-1);
+    }
     if (imessage)
         printf("phline: \"%s\"\n", phline);
-    istat = sscanf(hline, "%s z_min: %lf z_max: %lf units: %s",
+    istat = sscanf(hline, "%s z_min: %lf z_max: %lf %*s %s",
             filename, &(ps->hdr)->z_min, &(ps->hdr)->z_max, (ps->hdr)->z_units);
     if (imessage) {
         printf("sscanf istat=%d\n", istat);
@@ -825,8 +846,10 @@ int read_grd(struct surface *ps, int imessage) {
         printf("%s\t/* Units of the z-dimension */\n", (ps->hdr)->z_units);
     }
 
-    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL)
+    if ((phline = fgets(hline, MAXLINE_LONG, fp_grd)) == NULL) {
+        fclose(fp_grd);
         return (-1);
+    }
     if (imessage)
         printf("phline: \"%s\"\n", phline);
     istat = sscanf(hline, "%s  scale_factor: %lf add_offset: %lf",
@@ -839,23 +862,63 @@ int read_grd(struct surface *ps, int imessage) {
     }
 
 
-    /* allocate and read grd data */
+    // allocate and read grd data
 
     idatasize = (ps->hdr)->nx * (ps->hdr)->ny;
     if ((ps->zdata = (float *) malloc((size_t) (idatasize * sizeof (float)))) == NULL) {
         fprintf(stderr, "ERROR: Cannot allocate array for grd z data.\n");
+        fclose(fp_grd);
         return (-1);
     }
-    for (npt = 0; npt < idatasize; npt++) {
-        if (fscanf(fp_grd, " %lf", &zval) == EOF) {
-            fprintf(stderr, "ERROR: Reading grd z data:\n");
-            fprintf(stderr, "  %s\n", ps->grd_file);
+
+    if (ps->isHdrBinaryPair) { // 20170911 AJL - added to support compact binary surface files
+        fclose(fp_grd);
+        sprintf(grdfilename, "%s", ps->grd_file);
+        if ((fp_grd = fopen(grdfilename, "r")) == NULL) {
+            fprintf(stderr, "ERROR: Cannot open binary surface grd file:\n");
+            fprintf(stderr, "  %s\n", grdfilename);
             return (-1);
         }
-        *(ps->zdata + npt) = zval * (ps->hdr)->z_scale_factor + ps->zshift;
+        long npt_read = 0;
+        while (npt_read < idatasize) {
+            if (fread(&zval, sizeof (double), 1, fp_grd) != 1) {
+                fprintf(stderr, "ERROR: Reading binary grd z data at npt %ld/%ld:\n", npt_read, idatasize);
+                fprintf(stderr, "  %s\n", grdfilename);
+                fclose(fp_grd);
+                return (-1);
+            }
+            //if (npt_read < 50) printf("DEBUG: Z %f -> %f\n", zval, zval * (ps->hdr)->z_scale_factor + ps->zshift);
+            *(ps->zdata + npt_read) = zval * (ps->hdr)->z_scale_factor + ps->zshift;
+            npt_read++;
+        }
+        if (imessage)
+            printf("%ld/%ld Z-level binary data points read.\n", npt_read, idatasize);
+    } else { // single GMT ASCII file
+        long npt_read = 0;
+        char cchr;
+        while (npt_read < idatasize) {
+            if ((istat = fscanf(fp_grd, "%lf ", &zval)) == 0) { // 20170807 AJL - Added for case of additional header lines
+                //printf("istat=%d\n", istat);
+                // assume more header lines
+                //fgets(hline, MAXLINE_LONG, fp_grd);
+                while ((cchr = fgetc(fp_grd)) != '\n' && cchr != EOF) {
+                    ;
+                }
+                continue;
+            }
+            if (istat == EOF) {
+                fprintf(stderr, "ERROR: Reading ASCII grd z data at npt %ld/%ld:\n", npt_read, idatasize);
+                fprintf(stderr, "  %s\n", grdfilename);
+                fclose(fp_grd);
+                return (-1);
+            }
+            //if (npt_read < 50) printf("DEBUG: Z %f -> %f\n", zval, zval * (ps->hdr)->z_scale_factor + ps->zshift);
+            *(ps->zdata + npt_read) = zval * (ps->hdr)->z_scale_factor + ps->zshift;
+            npt_read++;
+        }
+        if (imessage)
+            printf("%ld/%ld Z-level ASCII data points read.\n", npt_read, idatasize);
     }
-    if (imessage)
-        printf("%ld Z-level data points read.\n", idatasize);
     fclose(fp_grd);
 
 
@@ -1040,7 +1103,7 @@ void set_rough_limits(struct rough_bndry *pr) {
 
 /*** function to get rough boundary z level */
 
-INLINE double get_rough_z(nrough, x)
+double get_rough_z(nrough, x)
 int nrough;
 double x;
 {
@@ -1894,7 +1957,7 @@ int set_solid_limits(struct solid *addr) {
 
 /*** function to calculate velocity from  polygon model for 2D to 3D case */
 
-INLINE double get_poly_vel_2D3D(double xpos, double ypos, double zpos, char wavetype,
+double get_poly_vel_2D3D(double xpos, double ypos, double zpos, char wavetype,
         double* pdensity, int iden, int *pimodel) {
     double xtrans, ytrans;
 
@@ -1976,12 +2039,7 @@ struct polygon *addr;*/ {
 
 /*** function to calculate velocity from polygon model */
 
-INLINE double get_solid_vel(xpos, ypos, zpos, wavetype, density, iden)
-double xpos, ypos, zpos;
-char wavetype;
-double *density;
-int iden;
-{
+double get_solid_vel(double xpos, double ypos, double zpos, char wavetype, double *density, int iden) {
     double vel;
     struct solid *addr;
 
@@ -2089,12 +2147,7 @@ void read_fdiff_vel(char* fname) {
 
 /* function to calculate velocity from finite difference grid model */
 
-INLINE double get_fdiff_vel(xpos, zpos, wavetype, density, iden)
-double xpos, zpos;
-char wavetype;
-double *density;
-int iden;
-{
+double get_fdiff_vel(double xpos, double zpos, char wavetype, double *density, int iden) {
     int zindex, xindex;
     double vel, slow;
 
