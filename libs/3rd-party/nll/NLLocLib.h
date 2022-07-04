@@ -333,9 +333,6 @@ iSaveHypoInvSum, iSaveHypoInvY2KArc, iSaveAlberto4Sum, iSaveFmamp,
 iSaveSnapSum, iCalcSedOrigin, iSaveDecSec, iSavePublicID, iSaveNone;
 // 20170811 AJL - added to allow saving of expectation hypocenter results instead of maximum likelihood
 EXTERN_TXT int iSaveNLLocExpectation;
-// 20220131 AJL - added to support JSON output of location results
-EXTERN_TXT int iSaveNLLocEvent_JSON;
-
 
 // Arrival prior weighting flag (NLL_FORMAT_VER_2)
 EXTERN_TXT int iUseArrivalPriorWeights;

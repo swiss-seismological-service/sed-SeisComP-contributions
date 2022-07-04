@@ -114,7 +114,6 @@ e-mail: anthony@alomax.net  web: http://www.alomax.net
 #include "phaseloclist.h"
 #include "otime_limit.h"
 #include "NLLocLib.h"
-#include "json_io.h"
 
 #ifdef CUSTOM_ETH
 #include "custom_eth/eth_functions.h"
@@ -980,59 +979,6 @@ int SaveLocation(HypoDesc* hypo, int ngrid, char* fnobs, char *fnout, int numArr
             sprintf(sys_command, "cp %s %slast.scat", fname, f_outpath);
             system(sys_command);
         }
-    }
-
-
-    // 20220131 AJL - added to support JSON output of location results
-    if (iSaveNLLocEvent_JSON) {
-
-#ifdef _GNU_SOURCE
-
-        printf("DEBUG: iSaveNLLocEvent_JSON\n");
-        // write NLLoc hypocenter to memory stream, convert stream to JSON
-
-        // GNU C library extensions to support memory streams (function open_memstream).
-        char *bp_memory_stream = NULL;
-        size_t memory_stream_size;
-        FILE *fp_memory_stream = NULL;
-        fp_memory_stream = open_memstream(&bp_memory_stream, &memory_stream_size);
-        if (fp_memory_stream == NULL) {
-            nll_puterr("ERROR: Cannot write NLLoc hypocenter-phase file to JSON: GNU C library extensions needed to support memory streams (function open_memstream).");
-        } else {
-            // write location to memory stream
-            if ((istat = WriteLocation(fp_memory_stream, hypo, Arrival,
-                    NumArrivals + numArrivalsReject, NULL, isave_phases, 1, 0,
-                    LocGrid + ngrid, 0)) < 0) {
-                nll_puterr("ERROR: writing location to memory stream, Cannot write NLLoc hypocenter-phase file to JSON.");
-            } else {
-                printf("DEBUG: iSaveNLLocEvent_JSON: wrote location to memory stream\n");
-                // convert to JSON
-                sprintf(frootname, "%s.loc", fnout);
-                sprintf(fname, "%s.hyp.json", frootname);
-                FILE *fp_json_out = NULL;
-                if ((fp_json_out = fopen(fname, "w")) == NULL) {
-                    nll_puterr2("ERROR: opening hypocenter JSON output file", fname);
-                } else {
-                    fflush(fp_memory_stream);
-                    rewind(fp_memory_stream);
-                    printf("DEBUG: iSaveNLLocEvent_JSON: json_write_NLL_location\n");
-                    json_write_NLL_location(bp_memory_stream, memory_stream_size, fp_json_out);
-                    fclose(fp_json_out);
-                }
-
-                // send message
-
-            }
-
-            // cleanup
-            fclose(fp_memory_stream);
-
-        }
-
-#else
-        nll_puterr("ERROR: Cannot write NLLoc hypocenter-phase file to JSON: GNU C library extensions needed to support memory streams (function open_memstream(); see compiler define _GNU_SOURCE).");
-#endif
-
     }
 
     if (iSaveNLLocSum) {
@@ -2699,18 +2645,6 @@ int GetNextObs(HypoDesc* phypo, FILE* fp_obs, ArrivalDesc *arrival, char* ftype_
             EvalPhaseID(eval_phase_tmp, arrival->phase);
             strcpy(arrival->phase, eval_phase_tmp);
             //printf(" -> arrival->phase %s\n", arrival->phase);
-        }
-
-        return (istat);
-
-    } else if (strncmp(ftype_obs, "INGV_JSON", 9) == 0) {
-
-        // INGV json format 20211012
-        // assumes a single event in each input file
-
-        istat = json_read_next_arrival_INGV(phypo, fp_obs, arrival, nfirst);
-        if (istat < 1) {
-            return (OBS_FILE_END_OF_INPUT);
         }
 
         return (istat);
@@ -9750,38 +9684,6 @@ int CalcConfidenceIntrvl(GridDesc* ptgrid, HypoDesc* phypo, char* filename) {
 
 }
 
-
-
-
-/** function to check if nll input file is nll-control JSON format */
-
-// AJL 20211014 - added
-
-int is_nll_control_json(FILE* fp_input) {
-
-    char line_buf[MAXLINE_LONG];
-
-    // read each input line and check for nll-control JSON name tag
-
-    while (fgets(line_buf, MAXLINE_LONG, fp_input) != NULL) { // read next line
-
-        // skip comment line
-        if (strncmp(line_buf, "#", 1) == 0) {
-            continue;
-        }
-
-        // check for JSON name tag
-        if (strstr(line_buf, "nll-control") != NULL) {
-            rewind(fp_input);
-            return (1);
-        }
-    }
-
-    rewind(fp_input);
-    return (0);
-
-}
-
 /** function to read input control file */
 
 // AJL 20071217 - added char** passing of parameters
@@ -10938,8 +10840,6 @@ int GetNLLoc_HypOutTypes(char* line1) {
             iSaveNLLocExpectation = 1;
         else if (strcmp(hyp_type, "SAVE_NLLOC_OCTREE") == 0)
             iSaveNLLocOctree = 1;
-        else if (strcmp(hyp_type, "SAVE_NLLOC_JSON") == 0) // 20220131 AJL - added to support JSON output of location results
-            iSaveNLLocEvent_JSON = 1;
         else if (strcmp(hyp_type, "SAVE_HYPO71_ALL") == 0)
             iSaveHypo71Event = iSaveHypo71Sum = 1;
         else if (strcmp(hyp_type, "SAVE_HYPO71_SUM") == 0)

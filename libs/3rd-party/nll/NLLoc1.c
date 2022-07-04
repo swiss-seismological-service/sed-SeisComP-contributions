@@ -68,7 +68,6 @@ tel: +33(0)493752502  e-mail: anthony@alomax.net  web: http://www.alomax.net
 #include "otime_limit.h"
 #include "NLLocLib.h"
 
-#include "json_io.h"
 
 #ifdef CUSTOM_ETH
 #include "custom_eth/eth_functions.h"
@@ -184,8 +183,6 @@ int NLLoc
             = iSaveAlberto4Sum = iSaveFmamp = iSaveNLLocOctree = iSaveNone = 0;
     // 20170811 AJL - added to allow saving of expectation hypocenter results instead of maximum likelihood
     iSaveNLLocExpectation = 0;
-    // 20220131 AJL - added
-    iSaveNLLocEvent_JSON = 0;
 
     // GNU C library extensions to support memory streams (function open_memstream).
     char *bp_memory_stream = NULL;
@@ -203,24 +200,6 @@ int NLLoc
         }
     } else {
         fp_control = NULL;
-    }
-
-    // test if control file is nll-control JSON
-    int is_nll_control_json_file = 0;
-    if (fp_control != NULL) {
-        if ((is_nll_control_json_file = is_nll_control_json(fp_control))) {
-            // read nll-control JSON into array of NLLoc control file lines
-            param_line_array = json_read_nll_control(fp_control, &n_param_lines);
-            if (fp_control != NULL) {
-                fclose(fp_control);
-                NumFilesOpen--;
-            }
-            if (param_line_array == NULL) {
-                nll_puterr("FATAL ERROR: reading nll-control JSON file.");
-                return_value = EXIT_ERROR_FILEIO;
-                goto cleanup_return;
-            }
-        }
     }
 
 
@@ -731,20 +710,6 @@ cleanup_return:
     if (bp_memory_stream != NULL) {
         free(bp_memory_stream);
         bp_memory_stream = NULL;
-    }
-
-    // clean up memory allocations in read_nll_control_json
-    if (is_nll_control_json_file) {
-        for (int i = 0; i < n_param_lines; i++) {
-            if (param_line_array[i] != NULL) {
-                free(param_line_array[i]);
-            }
-        }
-        n_param_lines = 0;
-        if (param_line_array != NULL) {
-            free(param_line_array);
-        }
-        param_line_array = NULL;
     }
 
     return (return_value);
