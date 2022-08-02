@@ -7,6 +7,7 @@
  *   ALomax Scientific www.alomax.net
  *
  * modified: 2010.12.16
+ *           2014.10.30
  ***************************************************************************/
 
 
@@ -23,10 +24,18 @@
 #include "../alomax_matrix/alomax_matrix.h"
 #include "matrix_statistics.h"
 
-#define RA2DE 57.2957795129
-#define DE2RA 0.01745329252
-#define KM2DEG (90.0/10000.0)
-#define DEG2KM (10000.0/90.0)
+// 20171122 AJL  #define RA2DE 57.2957795129
+// 20171122 AJL  #define DE2RA 0.01745329252
+#define DE2RA (M_PI/180.0)
+#define RA2DE (180.0/M_PI)
+// 20151106 AJL - changed km/deg scaling to be based on sphere with radius 6371, average Earth radius.
+//#define KM2DEG (90.0/10000.0)
+//#define DEG2KM (10000.0/90.0)
+// 20171122 AJL  #define PI 3.14159265359
+#define PI M_PI
+#define AVG_ERAD 6371.0
+#define KM2DEG (180.0/PI*AVG_ERAD)
+#define DEG2KM (PI*AVG_ERAD/180.0)
 
 #ifndef SMALL_DOUBLE
 #define SMALL_DOUBLE 1.0e-20
@@ -35,13 +44,20 @@
 #define LARGE_DOUBLE 1.0e20
 #endif
 
+static char error_message[4096];
+
+/** function to print error and return last error message */
+char *get_matrix_statistics_error_mesage() {
+    return (error_message);
+}
+
 /** function to calculate the expectation (mean)  of a set of samples */
 
 Vect3D CalcExpectationSamples(float* fdata, int nSamples) {
 
     int nsamp, ipos;
 
-    float x, y, z, prob;
+    float x, y, z; //, prob;
     Vect3D expect = {0.0, 0.0, 0.0};
 
 
@@ -50,7 +66,7 @@ Vect3D CalcExpectationSamples(float* fdata, int nSamples) {
         x = fdata[ipos++];
         y = fdata[ipos++];
         z = fdata[ipos++];
-        prob = fdata[ipos++];
+        ipos++; //prob = fdata[ipos++];
         expect.x += (double) x;
         expect.y += (double) y;
         expect.z += (double) z;
@@ -97,6 +113,7 @@ Vect3D CalcExpectationSamplesWeighted(float* fdata, int nSamples) {
 /** function to calculate the expectation (mean) of a set of samples (lon,lat,depth,weight)
  *
  * global case - checks for wrap around in longitude (x) using specified xReference as correct longitude zone
+ * TODO: uses rectangular lat/lon geometry, does not try and correct for change in longitude distance with latitude.
  * TODO: does not try and correct for problems in latitude near poles.
  *
  */
@@ -170,13 +187,67 @@ Vect3D CalcExpectationSamplesGlobalWeighted(float* fdata, int nSamples, double x
     return (expect);
 }
 
-/** function to calculate the covariance of a set of samples */
+/** function to calculate the covariance of a set of samples assumed to be distributed following a target PDF
+ *
+ * 20141030 AJL - Bug fix: new version which subtracts the expectation from each data value before summing,
+ *      instead of correcting for expectation after summing and dividing by nSamples.
+ *      Should prevent precision errors when expectation is far from coordinates origin.
+ */
 
 Mtrx3D CalcCovarianceSamplesRect(float* fdata, int nSamples, Vect3D* pexpect) {
 
     int nsamp, ipos;
 
-    float x, y, z, prob;
+    float x, y, z; //, prob;
+    Mtrx3D cov = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+
+    /* calculate covariance following eq. (6-12), T & V, 1982 */
+
+    ipos = 0;
+    for (nsamp = 0; nsamp < nSamples; nsamp++) {
+        x = fdata[ipos++] - pexpect->x;
+        y = fdata[ipos++] - pexpect->y;
+        z = fdata[ipos++] - pexpect->z;
+        ipos++; //prob = fdata[ipos++]; // do not use prob since samples follow target PDF
+
+        cov.xx += (double) (x * x);
+        cov.xy += (double) (x * y);
+        cov.xz += (double) (x * z);
+
+        cov.yy += (double) (y * y);
+        cov.yz += (double) (y * z);
+
+        cov.zz += (double) (z * z);
+
+    }
+
+    cov.xx = cov.xx / (double) nSamples;
+    cov.xy = cov.xy / (double) nSamples;
+    cov.xz = cov.xz / (double) nSamples;
+
+    cov.yx = cov.xy;
+    cov.yy = cov.yy / (double) nSamples;
+    cov.yz = cov.yz / (double) nSamples;
+
+    cov.zx = cov.xz;
+    cov.zy = cov.yz;
+    cov.zz = cov.zz / (double) nSamples;
+
+
+    return (cov);
+}
+
+/** function to calculate the covariance of a set of samples
+ *
+ * !!! DO NOT USE - subject to precision errors!
+ */
+
+Mtrx3D CalcCovarianceSamplesRect_OLD(float* fdata, int nSamples, Vect3D* pexpect) {
+
+    int nsamp, ipos;
+
+    float x, y, z; //, prob;
     Mtrx3D cov = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
 
@@ -187,7 +258,7 @@ Mtrx3D CalcCovarianceSamplesRect(float* fdata, int nSamples, Vect3D* pexpect) {
         x = fdata[ipos++];
         y = fdata[ipos++];
         z = fdata[ipos++];
-        prob = fdata[ipos++];
+        ipos++; //prob = fdata[ipos++];
 
         cov.xx += (double) (x * x);
         cov.xy += (double) (x * y);
@@ -216,13 +287,196 @@ Mtrx3D CalcCovarianceSamplesRect(float* fdata, int nSamples, Vect3D* pexpect) {
     return (cov);
 }
 
-/** function to calculate the covariance of a set of samples in long(deg)/lat(deg)/depth(km) coordinates */
+/** simple great-circle distance and azimuth calculation on a sphere
+ *
+ * returns distance and azimuth in degrees for great-circle from latA/lonA to latB/lonB
+ *
+ */
+
+double GCDistanceAzimuth__(double latA, double lonA, double latB, double lonB, double *pazimuth) {
+
+    lonA *= DE2RA;
+    latA *= DE2RA;
+    lonB *= DE2RA;
+    latB *= DE2RA;
+
+    // distance
+    double dist = sin(latA) * sin(latB) + cos(latA) * cos(latB) * cos(lonA - lonB);
+    dist = acos(dist);
+
+    // 20141106 AJL - added following check, to prevent div by 0 of sin(dist))
+    if (dist < FLT_MIN) {
+        *pazimuth = 0.0;
+        return (dist * RA2DE);
+    }
+
+    // azimuth
+    double cosAzimuth =
+            (cos(latA) * sin(latB)
+            - sin(latA) * cos(latB)
+            * cos((lonB - lonA)))
+            / sin(dist);
+    double sinAzimuth =
+            cos(latB) * sin((lonB - lonA)) / sin(dist);
+    double az = atan2(sinAzimuth, cosAzimuth) * RA2DE;
+
+    if (isnan(az) && fabs(lonB - lonA) < 0.000001) {
+        if (latA > latB) {
+            az = 180.0;
+        } else {
+            az = 0.0;
+        }
+    }
+
+    if (az < 0.0) {
+        az += 360.0;
+    }
+
+    *pazimuth = az;
+    return (dist * RA2DE);
+
+}
+
+
+
+
+/** function to calculate the covariance of a set of samples in long(deg)/lat(deg)/depth(km) coordinates
+ * samples assumed to be distributed following a target PDF
+ *
+ * 20141107 AJL - New version which calculates x and y coords using distance and azimuth of each sample
+ *      from expectation x,y.  Centers x,y and avoids problems near poles.
+ *
+ */
+//Mtrx3D CalcCovarianceSamplesGlobal_GCD(float* fdata, int nSamples, Vect3D* pexpect) {
 
 Mtrx3D CalcCovarianceSamplesGlobal(float* fdata, int nSamples, Vect3D* pexpect) {
 
     int nsamp, ipos;
 
-    float x, y, z, prob;
+    double lat, lon, x, y, z; //, prob;
+    Mtrx3D cov = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+    double distance, azimuth;
+    double xReference = pexpect->x;
+
+    // calculate covariance following eq. (6-12), T & V, 1982
+
+    ipos = 0;
+    for (nsamp = 0; nsamp < nSamples; nsamp++) {
+
+        lon = fdata[ipos++];
+        if (lon - xReference > 180.0)
+            lon -= 360.0;
+        else if (lon - xReference < -180.0)
+            lon += 360.0;
+        lat = fdata[ipos++];
+
+        distance = GCDistanceAzimuth__(pexpect->y, pexpect->x, lat, lon, &azimuth);
+        distance *= DEG2KM;
+
+        x = distance * sin(azimuth * DE2RA); // azimuth is deg CW from North
+        y = distance * cos(azimuth * DE2RA);
+        z = (fdata[ipos++] - pexpect->z);
+        ipos++; //prob = fdata[ipos++]; // do not use prob since sample density already follow target PDF
+
+        cov.xx += (double) (x * x);
+        cov.xy += (double) (x * y);
+        cov.xz += (double) (x * z);
+
+        cov.yy += (double) (y * y);
+        cov.yz += (double) (y * z);
+
+        cov.zz += (double) (z * z);
+
+    }
+
+    cov.xx = cov.xx / (double) nSamples;
+    cov.xy = cov.xy / (double) nSamples;
+    cov.xz = cov.xz / (double) nSamples;
+
+    cov.yx = cov.xy;
+    cov.yy = cov.yy / (double) nSamples;
+    cov.yz = cov.yz / (double) nSamples;
+
+    cov.zx = cov.xz;
+    cov.zy = cov.yz;
+    cov.zz = cov.zz / (double) nSamples;
+
+
+    return (cov);
+}
+
+/** function to calculate the covariance of a set of samples in long(deg)/lat(deg)/depth(km) coordinates
+ * samples assumed to be distributed following a target PDF
+ *
+ * 20141030 AJL - Bug fix: new version which subtracts the expectation from each data value before summing,
+ *      instead of correcting for expectation after summing and dividing by nSamples.
+ *      Should prevent precision errors when expectation is far from coordinates origin.
+ */
+
+Mtrx3D CalcCovarianceSamplesGlobal_NEW(float* fdata, int nSamples, Vect3D* pexpect) {
+    //Mtrx3D CalcCovarianceSamplesGlobal(float* fdata, int nSamples, Vect3D* pexpect) {
+
+    int nsamp, ipos;
+
+    float x, y, z; //, prob;
+    Mtrx3D cov = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+    double cos_lat = cos(pexpect->y * DE2RA);
+    double xReference = pexpect->x;
+
+    /* calculate covariance following eq. (6-12), T & V, 1982 */
+
+    ipos = 0;
+    for (nsamp = 0; nsamp < nSamples; nsamp++) {
+        x = fdata[ipos++];
+        if (x - xReference > 180.0)
+            x -= 360.0;
+        else if (x - xReference < -180.0)
+            x += 360.0;
+        x = (x - pexpect->x) * DEG2KM * cos_lat;
+        y = (fdata[ipos++] - pexpect->y) * DEG2KM;
+        z = (fdata[ipos++] - pexpect->z);
+        ipos++; //prob = fdata[ipos++]; // do not use prob since samples follow target PDF
+
+        cov.xx += (double) (x * x);
+        cov.xy += (double) (x * y);
+        cov.xz += (double) (x * z);
+
+        cov.yy += (double) (y * y);
+        cov.yz += (double) (y * z);
+
+        cov.zz += (double) (z * z);
+
+    }
+
+    cov.xx = cov.xx / (double) nSamples;
+    cov.xy = cov.xy / (double) nSamples;
+    cov.xz = cov.xz / (double) nSamples;
+
+    cov.yx = cov.xy;
+    cov.yy = cov.yy / (double) nSamples;
+    cov.yz = cov.yz / (double) nSamples;
+
+    cov.zx = cov.xz;
+    cov.zy = cov.yz;
+    cov.zz = cov.zz / (double) nSamples;
+
+
+    return (cov);
+}
+
+/** function to calculate the covariance of a set of samples in long(deg)/lat(deg)/depth(km) coordinates
+ *
+ * !!! DO NOT USE - subject to precision errors!
+ */
+
+Mtrx3D CalcCovarianceSamplesGlobal_OLD(float* fdata, int nSamples, Vect3D* pexpect) {
+    //Mtrx3D CalcCovarianceSamplesGlobal(float* fdata, int nSamples, Vect3D* pexpect) {
+
+    int nsamp, ipos;
+
+    float x, y, z; //, prob;
     Mtrx3D cov = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     double cos_lat = cos(pexpect->y * DE2RA);
@@ -240,7 +494,7 @@ Mtrx3D CalcCovarianceSamplesGlobal(float* fdata, int nSamples, Vect3D* pexpect) 
         x = x * DEG2KM * cos_lat;
         y = fdata[ipos++] * DEG2KM;
         z = fdata[ipos++];
-        prob = fdata[ipos++];
+        ipos++; //prob = fdata[ipos++];
 
         cov.xx += (double) (x * x);
         cov.xy += (double) (x * y);
@@ -269,9 +523,75 @@ Mtrx3D CalcCovarianceSamplesGlobal(float* fdata, int nSamples, Vect3D* pexpect) 
     return (cov);
 }
 
-/** function to calculate the covariance of a set of samples in long(deg)/lat(deg)/depth(km) coordinates */
+/** function to calculate the covariance of a set of samples in long(deg)/lat(deg)/depth(km) coordinates
+ *
+ * 20141030 AJL - Bug fix: new version which subtracts the expectation from each data value before summing,
+ *      instead of correcting for expectation after summing and dividing by nSamples.
+ *      Should prevent precision errors when expectation is far from coordinates origin.
+ */
 
 Mtrx3D CalcCovarianceSamplesGlobalWeighted(float* fdata, int nSamples, Vect3D* pexpect) {
+
+    int nsamp, ipos;
+
+    double x, y, z;
+    Mtrx3D cov = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+    double weight;
+    double weight_sum = 0.0;
+
+    double cos_lat = cos(pexpect->y * DE2RA);
+    double xReference = pexpect->x;
+
+    /* calculate covariance following eq. (6-12), T & V, 1982 */
+
+    ipos = 0;
+    for (nsamp = 0; nsamp < nSamples; nsamp++) {
+        x = fdata[ipos++];
+        if (x - xReference > 180.0)
+            x -= 360.0;
+        else if (x - xReference < -180.0)
+            x += 360.0;
+        x = (x - pexpect->x) * DEG2KM * cos_lat;
+        y = (fdata[ipos++] - pexpect->y) * DEG2KM;
+        z = (fdata[ipos++] - pexpect->z);
+        weight = fdata[ipos++];
+
+        cov.xx += (x * x) * weight;
+        cov.xy += (x * y) * weight;
+        cov.xz += (x * z) * weight;
+
+        cov.yy += (y * y) * weight;
+        cov.yz += (y * z) * weight;
+
+        cov.zz += (z * z) * weight;
+
+        weight_sum += weight;
+
+    }
+
+    cov.xx = cov.xx / weight_sum;
+    cov.xy = cov.xy / weight_sum;
+    cov.xz = cov.xz / weight_sum;
+
+    cov.yx = cov.xy;
+    cov.yy = cov.yy / weight_sum;
+    cov.yz = cov.yz / weight_sum;
+
+    cov.zx = cov.xz;
+    cov.zy = cov.yz;
+    cov.zz = cov.zz / weight_sum;
+
+
+    return (cov);
+}
+
+/** function to calculate the covariance of a set of samples in long(deg)/lat(deg)/depth(km) coordinates
+ *
+ * !!! DO NOT USE - subject to precision errors!
+ */
+
+Mtrx3D CalcCovarianceSamplesGlobalWeighted_OLD(float* fdata, int nSamples, Vect3D* pexpect) {
 
     int nsamp, ipos;
 
@@ -366,7 +686,7 @@ Ellipse2D CalcHorizontalErrorEllipse(Mtrx3D *pcov, double del_chi_2) {
     //if ((istat = nll_svdcmp0(A_matrix, 2, 2, W_vector, V_matrix)) < 0) {
     svd_helper(A_matrix, 2, 2, W_vector, V_matrix);
     if (W_vector[0] < SMALL_DOUBLE || W_vector[1] < SMALL_DOUBLE) {
-        fprintf(stderr, "ERROR: invalid SVD singular value for confidence ellipsoids.");
+        fprintf(stderr, "ERROR: invalid SVD singular value for confidence ellipse.");
         ierr = 1;
     } else {
 
@@ -505,6 +825,11 @@ Ellipsoid3D CalcErrorEllipsoid(Mtrx3D *pcov, double del_chi_2) {
         ell.len2 = sqrt(del_chi_2) / sqrt(1.0 / W_vector[1]);
         ell.len3 = sqrt(del_chi_2) / sqrt(1.0 / W_vector[2]);
 
+        // 20150601 AJL - semi-major axis az and dip added to support conversion to QuakeML Tait-Bryan representation
+        ell.az3 = atan2(V_matrix[0][2], V_matrix[1][2]) * RA2DE;
+        ell.dip3 = asin(V_matrix[2][2]) * RA2DE;
+
+
     }
 
     free_matrix_double(A_matrix, 3, 3);
@@ -531,21 +856,21 @@ void ellipsiod2Axes(Ellipsoid3D *pellipsoid, Vect3D *paxis1, Vect3D *paxis2, Vec
     double cosd1, cosd2;
 
 
-    /* strike angles positive CCW from East = 0 */
+    /* strike angles converted to positive CCW from East = 0 */
     az1 = 90.0 - pellipsoid->az1;
     az2 = 90.0 - pellipsoid->az2;
-    /* dip angles increasing downwards from horiz = 0 */
+    /* dip angles increasing downwards from horiz = 0, convert to upwards */
     dip1 = -pellipsoid->dip1;
     dip2 = -pellipsoid->dip2;
 
     /* get 3D vector axes */
 
-    cosd1 = cos(DE2RA * pellipsoid->dip1);
+    cosd1 = cos(DE2RA * dip1);
     paxis1->x = cos(DE2RA * az1) * cosd1;
     paxis1->y = sin(DE2RA * az1) * cosd1;
     paxis1->z = -sin(DE2RA * dip1);
 
-    cosd2 = cos(DE2RA * pellipsoid->dip2);
+    cosd2 = cos(DE2RA * dip2);
     paxis2->x = cos(DE2RA * az2) * cosd2;
     paxis2->y = sin(DE2RA * az2) * cosd2;
     paxis2->z = -sin(DE2RA * dip2);
@@ -567,7 +892,12 @@ void ellipsiod2Axes(Ellipsoid3D *pellipsoid, Vect3D *paxis1, Vect3D *paxis2, Vec
 
 }
 
-/** method to convert ellipsoid to an XML (pseudo-QuakeML) ConfidenceEllipsoid */
+/** method to convert ellipsoid to an XML (pseudo-QuakeML) ConfidenceEllipsoid
+ *
+ *  !!! Very incomplete.  Only converts NLL Ellipsoid axes parameters minor(3)/intermediate(3)/major(1) to
+ *      major(3)/intermediate(3)/minor(1) ordering
+
+ */
 
 void nllEllipsiod2XMLConfidenceEllipsoid(Ellipsoid3D *pellipsoid,
         double* psemiMajorAxisLength, double* pmajorAxisPlunge, double* pmajorAxisAzimuth,
@@ -583,7 +913,7 @@ void nllEllipsiod2XMLConfidenceEllipsoid(Ellipsoid3D *pellipsoid,
     *psemiIntermediateAxisLength = pellipsoid->len2;
     *psemiMinorAxisLength = pellipsoid->len1;
 
-    double plunge = 0.0;
+    double plunge = axis3.z >= 0.0 ? 90.0 : -90.0;
     double hypot = sqrt(axis3.x * axis3.x + axis3.y * axis3.y);
     if (hypot > FLT_MIN) {
         plunge = RA2DE * atan(axis3.z / hypot);
@@ -601,7 +931,7 @@ void nllEllipsiod2XMLConfidenceEllipsoid(Ellipsoid3D *pellipsoid,
     *pmajorAxisAzimuth = azim;
 
 
-    plunge = 0.0;
+    plunge = axis2.z >= 0.0 ? 90.0 : -90.0;
     hypot = sqrt(axis2.x * axis2.x + axis2.y * axis2.y);
     if (hypot > FLT_MIN) {
         plunge = RA2DE * atan(axis2.z / hypot);
@@ -619,4 +949,229 @@ void nllEllipsiod2XMLConfidenceEllipsoid(Ellipsoid3D *pellipsoid,
     *pintermediateAxisAzimuth = azim;
 
 }
+
+/** method to perform dot product on two 3x3 matrices
+ *
+ * WARING: no check if input matrices are 3x3!
+ */
+
+int matrix_dot_3_3(MatrixDouble first, MatrixDouble second, MatrixDouble mtx_dot) {
+
+    int c, d, k;
+    double sum;
+    for (c = 0; c < 3; c++) {
+        for (d = 0; d < 3; d++) {
+            sum = 0.0;
+            for (k = 0; k < 3; k++) {
+                sum = sum + first[c][k] * second[k][d];
+            }
+            mtx_dot[c][d] = sum;
+        }
+    }
+
+    return (0);
+
+}
+
+/** method to convert NonLinLoc/Hypoellipse ellipsoid to an into the Tait-Bryan representation of QuakeML ConfidenceEllipsoid
+ *
+ * sets QuakeML ConfidenceEllipsoid fields
+ * returns 0 on success
+ *          -1 on error
+ */
+
+int nllEllipsiod2QMLConfidenceEllipsoid(Ellipsoid3D *pellipsoid,
+        double* psemiMajorAxisLength,
+        double* psemiMinorAxisLength,
+        double* psemiIntermediateAxisLength,
+        double* pmajorAxisAzimuth,
+        double* pmajorAxisPlunge,
+        double* pmajorAxisRotation) {
+
+    /*
+       // 3D ellipsoid
+       typedef struct {
+           double az1, dip1, len1;   // semi-minor axis km
+           double az2, dip2, len2;   // semi-intermediate axis km
+           double len3;   // semi-major axis km
+           double az3, dip3;   // 20150601 AJL - semi-major axis az and dip added to support conversion to QuakeML Tait-Bryan representation
+       } Ellipsoid3D;
+     */
+    /* adapted from: https://github.com/usgs/libcomcat libcomcat.ellipse.py
+     * by A Lomax / ISTI 20150601
+
+                def vec2tait(ellipsoid):
+                 """Convert earthquake origin error ellipsoid 3x3 matrix into Tait-Bryan representation.
+
+                 Input argument:
+                 ellipsoid - 3x3 Numpy array containing the elements describing earthquake origin error ellipsoid.
+                 [SemiMajorAxisAzimuth SemiMajorAxisPlunge SemiMajorAxisLength;
+                  SemiMinorAxisAzimuth SemiMinorAxisPlunge SemiMinorAxisLength;
+                  SemiIntermediateAxisAzimuth SemiIntermediateAxisPlunge SemiIntermediateAxisLength]
+                 (distance values in kilometers, angles in degrees)
+
+                 Returns: 6 element tuple:
+                 semiMajorAxisLength (km)
+                 semiMinorAxisLength (km)
+                 semiIntermediateAxisLength (km)
+                 majorAxisAzimuth (degrees)
+                 majorAxisPlunge (degrees)
+                 majorAxisRotation (degrees)
+
+                 #      Tait-Bryan angles use in Section 3.3.9 ConfidenceEllipsoid
+                 #      QuakeML-BED-20130214a.pdf
+                 #
+                 #      The image showing two views of the rotation in the QuakeML document is wrong
+                 #      and disagrees with the text, which says
+                 #      X is major axis, Y is the minor axis and thus Z is the intermediate axis
+                 #      The rotations are as follow:
+                 #      1. about z-axis by angle PSI (heading) to give (x', y', z)
+                 #      2, about y' with angle with angle PHI (elevation) to give (x'', y', z'')
+                 #      3. about x'' with angle THETA (bank) to give (x'', y''', z''')
+                 #
+                 #      This sequence is known as z-y'-x'' intrinsic rotation (http://en.wikipedia.org/wiki/Euler_angles)
+                 #      The figure in the QuakeML document is the z-x'-y'' rotation. Note the order
+                 #
+                 #      azimuth is measured positive in direction from x to y
+                 #      plunge is measured positive such that the x' moves in the positive z-direction
+                 #      rotation is measured positive such that the y'' moves in the positive z-direction
+                 #
+                 #
+                 # azimuth is heading, measure in degrees from north
+                 # plunge is elevation
+                 # rotation is roll
+
+                 # Author: R.B.Herrmann (rbh@eas.slu.edu)
+                 # Created: 23 November 2014
+                 # Adapted-By: rbh
+                 # Translated to Python by Mike Hearne (mhearne@usgs.gov)
+
+     */
+
+    double PHI, PSI;
+    double PHImaj, PSImaj;
+    double PHIint, PSIint;
+    double PHImin, PSImin;
+
+
+    //ellipsearray = ellipsoid.flatten()
+
+    // get indices of the minor, intermediate, major axes
+    //smallest,intermediate,largest = ellipsearray[2:9:3].argsort()
+
+    // we have two of the angles already
+    // convert from km to meters for the lengths
+    //
+    //k=3*(largest)
+    *psemiMajorAxisLength = pellipsoid->len3;
+    *psemiMinorAxisLength = pellipsoid->len1;
+    *psemiIntermediateAxisLength = pellipsoid->len2;
+    *pmajorAxisPlunge = pellipsoid->dip3; // PHI
+    *pmajorAxisAzimuth = pellipsoid->az3; // PSI
+    if (*pmajorAxisAzimuth >= 360.0) {
+        *pmajorAxisAzimuth -= 360.0;
+    } else if (*pmajorAxisAzimuth < 0.0) {
+        *pmajorAxisAzimuth += 360.0;
+    }
+
+    PHI = *pmajorAxisPlunge;
+    PSI = *pmajorAxisAzimuth;
+
+    //
+    //    to get the THETA angle, we need to do some transformations
+    //
+    double RPHI[3][3] = {
+        {cos(DE2RA * PHI), 0, sin(DE2RA * PHI)},
+        {0, 1, 0},
+        {sin(DE2RA * PHI), 0, cos(DE2RA * PHI)}
+    };
+    double RPSI[3][3] = {
+        {cos(DE2RA * PSI), sin(DE2RA * PSI), 0},
+        {-sin(DE2RA * PSI), cos(DE2RA * PSI), 0},
+        {0, 0, 1}
+    };
+
+    //
+    //    reconstruct the T matrix
+    //
+    // major axis
+    //k=3*(largest)
+    PHImaj = pellipsoid->dip3;
+    PSImaj = pellipsoid->az3;
+    MatrixDouble T = matrix_double(3, 3);
+    T[0][0] = cos(DE2RA * PSImaj) * cos(DE2RA * PHImaj);
+    T[0][1] = sin(DE2RA * PSImaj) * cos(DE2RA * PHImaj);
+    T[0][2] = sin(DE2RA * PHImaj);
+
+    // minor axis
+    //k=3*(smallest)
+    PHImin = pellipsoid->dip1;
+    PSImin = pellipsoid->az1;
+    T[1][0] = cos(DE2RA * PSImin) * cos(DE2RA * PHImin);
+    T[1][1] = sin(DE2RA * PSImin) * cos(DE2RA * PHImin);
+    T[1][2] = sin(DE2RA * PHImin);
+
+    // minor axis
+    //k=3*(intermediate)
+    PHIint = pellipsoid->dip2;
+    PSIint = pellipsoid->az2;
+    T[2][0] = cos(DE2RA * PSIint) * cos(DE2RA * PHIint);
+    T[2][1] = sin(DE2RA * PSIint) * cos(DE2RA * PHIint);
+    T[2][2] = sin(DE2RA * PHIint);
+
+    // set an invert RPSI
+    int nrow, ncol;
+    MatrixDouble inv_RPSI = matrix_double(3, 3);
+    for (nrow = 0; nrow < 3; nrow++) {
+        for (ncol = 0; ncol < 3; ncol++) {
+            inv_RPSI[nrow][ncol] = RPSI[nrow][ncol];
+        }
+    }
+    // invert
+    if (matrix_double_inverse(inv_RPSI, 3, 3) < 0) {
+        snprintf(error_message, sizeof (error_message), "ERROR: in matrix_double_check_diagonal_non_zero_inverse()");
+        return (-1);
+    }
+    // set an invert RPHI
+    MatrixDouble inv_RPHI = matrix_double(3, 3);
+    for (nrow = 0; nrow < 3; nrow++) {
+        for (ncol = 0; ncol < 3; ncol++) {
+            inv_RPHI[nrow][ncol] = RPHI[nrow][ncol];
+        }
+    }
+    // invert
+    if (matrix_double_inverse(inv_RPHI, 3, 3) < 0) {
+        snprintf(error_message, sizeof (error_message), "ERROR: in matrix_double_check_diagonal_non_zero_inverse()");
+        return (-1);
+    }
+    // dot
+    MatrixDouble dot_inv_RPSI_inv_RPHI = matrix_double(3, 3);
+    if (matrix_dot_3_3(inv_RPSI, inv_RPHI, dot_inv_RPSI_inv_RPHI)) {
+        snprintf(error_message, sizeof (error_message), "ERROR: in matrix_double_check_diagonal_non_zero_inverse()");
+    }
+    // dot
+    MatrixDouble dot_T__inv_RPSI_inv_RPHI = matrix_double(3, 3);
+    if (matrix_dot_3_3(T, dot_inv_RPSI_inv_RPHI, dot_T__inv_RPSI_inv_RPHI)) {
+        snprintf(error_message, sizeof (error_message), "ERROR: in matrix_double_check_diagonal_non_zero_inverse()");
+        return (-1);
+    }
+    //double G[3][3][3] = np.dot(T, np.dot(inv_RPSI, inv_RPHI));
+    double THETA = atan2(dot_T__inv_RPSI_inv_RPHI[1][2], dot_T__inv_RPSI_inv_RPHI[1][1]) * RA2DE;
+    if (THETA >= 360.0) {
+        THETA -= 360.0;
+    } else if (THETA < 0.0) {
+        THETA += 360.0;
+    }
+    *pmajorAxisRotation = THETA;
+
+    free_matrix_double(T, 3, 3);
+    free_matrix_double(inv_RPSI, 3, 3);
+    free_matrix_double(inv_RPHI, 3, 3);
+    free_matrix_double(dot_inv_RPSI_inv_RPHI, 3, 3);
+    free_matrix_double(dot_T__inv_RPSI_inv_RPHI, 3, 3);
+
+    return (0);
+
+}
+
 

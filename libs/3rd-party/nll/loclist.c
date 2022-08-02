@@ -120,6 +120,7 @@ LocNode *removeLocationFromLocList(LocNode *head, LocNode* addr, int freeHypoDes
 	addr->next->prev = addr->prev;
 
 	free(addr);
+        addr = NULL;
 
 	return(head);
 
@@ -207,6 +208,7 @@ void freeLocation(Location *plocation)
 	freeTree3D(plocation->poctTree, 1);
 	free(plocation->pscatterSample);
 	free(plocation);
+        plocation = NULL;
 
 }
 

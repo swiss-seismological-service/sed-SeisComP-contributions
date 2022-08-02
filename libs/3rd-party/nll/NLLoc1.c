@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1999-2010 Anthony Lomax <anthony@alomax.net, http://www.alomax.net>
+ * Copyright (C) 1999-2017 Anthony Lomax <anthony@alomax.net, http://www.alomax.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -59,8 +59,6 @@ tel: +33(0)493752502  e-mail: anthony@alomax.net  web: http://www.alomax.net
 #define PNAME  "NLLoc"
 #endif
 
-#define EXTERN_MODE 1
-
 #include "GridLib.h"
 #include "ran1/ran1.h"
 #include "velmod.h"
@@ -69,6 +67,7 @@ tel: +33(0)493752502  e-mail: anthony@alomax.net  web: http://www.alomax.net
 #include "phaseloclist.h"
 #include "otime_limit.h"
 #include "NLLocLib.h"
+
 
 #ifdef CUSTOM_ETH
 #include "custom_eth/eth_functions.h"
@@ -103,7 +102,7 @@ int NLLoc
     int maxArrExceeded = 0;
     int n_file_root_count = 1;
     char fn_root_out[FILENAME_MAX], fname[FILENAME_MAX], fn_root_out_last[FILENAME_MAX];
-    char sys_command[MAXLINE_LONG];
+    char sys_command[2 * FILENAME_MAX];
     char *chr;
     FILE *fp_obs = NULL, *fpio;
 
@@ -126,7 +125,7 @@ int NLLoc
     NumEvents = NumEventsLocated = NumLocationsCompleted = 0;
     NumCompDesc = 0;
     NumLocAlias = 0;
-    NumLocExclude = 0;
+    NumLocExclude = NumLocInclude = 0;
     NumTimeDelays = 0;
     NumPhaseID = 0;
     DistStaGridMax = 0.0;
@@ -147,6 +146,13 @@ int NLLoc
     strcpy(fn_root_out_last, "");
     ;
 
+    // Search prior or posteriour PDF
+    iUseSearchPrior = 0;
+    iUseSearchPosterior = 0;
+
+    // Arrival prior weighting  (NLL_FORMAT_VER_2)
+    iUseArrivalPriorWeights = 1;
+
     // station distance weighting
     iSetStationDistributionWeights = 0;
     stationDistributionWeightCutoff = -1;
@@ -156,6 +162,7 @@ int NLLoc
     GridMemList = NULL;
     GridMemListSize = 0;
     GridMemListNumElements = 0;
+    GridMemListTotalNumElementsAdded = 0;
 
     // otime limits
     OtimeLimitList = NULL;
@@ -163,7 +170,7 @@ int NLLoc
 
     // GLOBAL
     NumSources = 0;
-    NumStations = 0;
+    NumStationPhases = 0;
 
     // Gauss2
     iUseGauss2 = 0;
@@ -173,7 +180,12 @@ int NLLoc
     iSaveNLLocEvent = iSaveNLLocSum = iSaveHypo71Event = iSaveHypo71Sum
             = iSaveHypoEllEvent = iSaveHypoEllSum
             = iSaveHypoInvSum = iSaveHypoInvY2KArc
-            = iSaveAlberto4Sum = iSaveNLLocOctree = iSaveNone = 0;
+            = iSaveAlberto4Sum = iSaveFmamp = iSaveNLLocOctree = iSaveNone = 0;
+    // 20170811 AJL - added to allow saving of expectation hypocenter results instead of maximum likelihood
+    iSaveNLLocExpectation = 0;
+
+    // GNU C library extensions to support memory streams (function open_memstream).
+    char *bp_memory_stream = NULL;
 
     /* open control file */
 
@@ -220,7 +232,6 @@ int NLLoc
 
     /* read observation lines into memory stream (must read control file first) */
 
-    char *bp_memory_stream = NULL;
     if (n_obs_lines > 0) {
 #ifdef _GNU_SOURCE
         size_t memory_stream_size;
@@ -269,6 +280,7 @@ int NLLoc
             strcpy(fname, fn_control);
         sprintf(sys_command, "cp -p %s %s_%s", fn_control, fn_path_output, fname);
         system(sys_command);
+        //printf("sys_command: %s\n", sys_command);
         sprintf(sys_command, "cp -p %s %slast.in", fn_control, f_outpath);
         system(sys_command);
         //printf("sys_command: %s\n", sys_command);
@@ -347,7 +359,7 @@ int NLLoc
             }
             /* extract info from filename */
             if ((istat = ExtractFilenameInfo(fn_loc_obs[nObsFile], ftype_obs)) < 0)
-                nll_puterr("WARNING: error extractng information from filename.");
+                nll_puterr("WARNING: error extracting information from filename.");
         }
 
 
@@ -370,6 +382,17 @@ int NLLoc
                 nll_putmsg(1, MsgStr);
             }
 
+            // initialize hypo fields that may be modified when reading observations
+            Hypocenter.amp_mag = MAGNITUDE_NULL;
+            Hypocenter.num_amp_mag = 0;
+            Hypocenter.dur_mag = MAGNITUDE_NULL;
+            Hypocenter.num_dur_mag = 0;
+            strcpy(Hypocenter.public_id, "None");
+            Hypocenter.focMech.dipDir = 0.0;
+            Hypocenter.focMech.dipAng = 0.0;
+            Hypocenter.focMech.rake = 0.0;
+            Hypocenter.focMech.misfit = 0.0;
+            Hypocenter.focMech.nObs = -1;
 
             /* read next set of observations */
 
@@ -393,13 +416,14 @@ int NLLoc
 
             nll_putmsg(2, "");
             // AJL 20040720 SetOutName(Arrival + 0, fn_path_output, fn_root_out, fn_root_out_last, 1);
-            SetOutName(Arrival + 0, fn_path_output, fn_root_out, fn_root_out_last, iSaveDecSec, &n_file_root_count);
+            SetOutName(Arrival + 0, fn_path_output, fn_root_out, fn_root_out_last, iSaveDecSec, iSavePublicID, Hypocenter.public_id, &n_file_root_count);
             //strcpy(fn_root_out_last, fn_root_out); /* save filename */
             sprintf(MsgStr,
                     "... %d observations read, %d will be used for location (%s).",
                     NumArrivalsRead, NumArrivalsLocation, fn_root_out);
             nll_putmsg(1, MsgStr);
 
+            //int XX_last = NumAllocations;
 
             /* sort to get rejected arrivals at end of arrivals array */
 
@@ -444,9 +468,10 @@ int NLLoc
             // station distribution weighting
             if (iSetStationDistributionWeights || iSaveNLLocSum || octtreeParams.use_stations_density) {
                 //printf(">>>>>>>>>>> NumStations %d, NumArrivals %d, numArrivalsReject %d\n", NumStations, NumArrivals, numArrivalsReject);
-                NumStations = addToStationList(StationList, NumStations, Arrival, NumArrivalsRead);
+                int i_check_station_has_XYZ_coords = 0;
+                NumStationPhases = addToStationList(StationPhaseList, NumStationPhases, Arrival, NumArrivalsRead, 0, i_check_station_has_XYZ_coords);
                 if (iSetStationDistributionWeights)
-                    setStationDistributionWeights(StationList, NumStations, Arrival, NumArrivals);
+                    setStationDistributionWeights(StationPhaseList, NumStationPhases, Arrival, NumArrivals);
 
             }
 
@@ -480,12 +505,12 @@ int NLLoc
             /* preform location for each grid */
 
             sprintf(MsgStr,
-                    "Locating... (Files open: Tot:%d Buf:%d Hdr:%d  Alloc: %d  3DMem: %d) ...",
-                    NumFilesOpen, NumGridBufFilesOpen, NumGridHdrFilesOpen, NumAllocations, Num3DGridReadToMemory);
+                    "Locating... (Files open: Tot:%d Buf:%d Hdr:%d  Alloc: %d  3DMem: used:%d/avail:%d/load:%d) ...",
+                    NumFilesOpen, NumGridBufFilesOpen, NumGridHdrFilesOpen, NumAllocations, Num3DGridReadToMemory, GridMemListSize, GridMemListTotalNumElementsAdded);
             nll_putmsg(1, MsgStr);
 
             for (ngrid = 0; ngrid < NumLocGrids; ngrid++) {
-                if ((istat = Locate(ngrid, fn_root_out, numArrivalsReject, return_locations, return_oct_tree_grid, return_scatter_sample, ploc_list_head)) < 0) {
+                if ((istat = Locate(ngrid, fn_loc_obs[nObsFile], fn_root_out, numArrivalsReject, return_locations, return_oct_tree_grid, return_scatter_sample, ploc_list_head)) < 0) {
                     if (istat == GRID_NOT_INSIDE)
                         break;
                     else {
@@ -494,6 +519,8 @@ int NLLoc
                     }
                 }
             }
+            //printf("XXX: Located: NumAllocations %d->%d\n", XX_last, NumAllocations);
+            //XX_last = NumAllocations;
 
             NumEventsLocated++;
             if (istat == 0 && ngrid == NumLocGrids)
@@ -508,19 +535,30 @@ cleanup:
 
             /* release grid buffer or sheet storage */
 
-            for (narr = 0; narr < NumArrivalsLocation; narr++) {
-                if (Arrival[narr].n_time_grid < 0) { // check has opened time grid
+            // 20130413 AJL - bug? fix, release memory for all arrivals read
+            //for (narr = 0; narr < NumArrivalsLocation; narr++) {
+            for (narr = 0; narr < NumArrivals; narr++) {
+                //printf("DEBUG: FREE: narr %d Arrival[narr] %s %s n_companion %d n_time_grid %d  flag_ignore %d\n", narr, Arrival[narr].label, Arrival[narr].phase, Arrival[narr].n_companion, Arrival[narr].n_time_grid, Arrival[narr].flag_ignore);
+                // check has opened time grid
+                //if (Arrival[narr].n_time_grid < 0) {
+                //if (Arrival[narr].n_time_grid < 0 && !Arrival[narr].flag_ignore) { // 20160925 AJL - bug fix, ignored arrivals should already have grids freed
+                if (Arrival[narr].n_companion < 0 && Arrival[narr].n_time_grid < 0 && !Arrival[narr].flag_ignore) { // 20170207 AJL - bug fix
                     DestroyGridArray(&(Arrival[narr].sheetdesc));
                     FreeGrid(&(Arrival[narr].sheetdesc));
                     NLL_DestroyGridArray(&(Arrival[narr].gdesc));
                     NLL_FreeGrid(&(Arrival[narr].gdesc));
                 }
             }
+            //  20141219 AJL - bug fix, should be outside events/obs loop!
+            //NLL_FreeGridMemory();
 
             /* close time grid files (opened in function GetObservations) */
 
-            for (narr = 0; narr < NumArrivalsLocation; narr++)
-                CloseGrid3dFile(&(Arrival[narr].fpgrid), &(Arrival[narr].fphdr));
+            // 20130413 AJL - bug? fix, release memory for all arrivals read
+            //for (narr = 0; narr < NumArrivalsLocation; narr++) {
+            for (narr = 0; narr < NumArrivals; narr++) {
+                CloseGrid3dFile(&(Arrival[narr].gdesc), &(Arrival[narr].fpgrid), &(Arrival[narr].fphdr));
+            }
 
             if (iLocated) {
                 nll_putmsg(2, "");
@@ -533,6 +571,8 @@ cleanup:
 
             // 201101013 AJL - Bug fix - this cleanup was done in NLLocLib.c->clean_memory() which puts the cleanup incorrectly inside the Locate loop
             CleanWeightMatrix();
+
+            //printf("XXX: Cleaned: NumAllocations %d->%d\n", XX_last, NumAllocations);
 
         } /* next event */
 
@@ -615,13 +655,13 @@ cleanup:
                 sprintf(fname, "%s.sum.grid%d.loc.stations", fn_path_output, ngrid);
                 if ((fpio = fopen(fname, "w")) == NULL) {
                     nll_puterr2(
-                            "ERROR: opening cumulative phase statistics output file", fname);
+                            "ERROR: opening station list output file", fname);
                     return_value = EXIT_ERROR_FILEIO;
                     goto cleanup_return;
                 } else {
                     NumFilesOpen++;
                 }
-                WriteStationList(fpio, StationList, NumStations);
+                WriteStationList(fpio, StationPhaseList, NumStationPhases);
                 fclose(fpio);
                 // save to last
                 sprintf(sys_command, "cp %s %slast.stations", fname, f_outpath);
@@ -633,14 +673,17 @@ cleanup:
     // clean up before leaving NLLoc function
 cleanup_return:
 
+    //  20141219 AJL - bug? fix, moved here from inside events/obs loop!
+    NLL_FreeGridMemory();
+
     if (!iSaveNone)
         CloseSummaryFiles();
 
     if (fp_model_grid_P != NULL) {
-        CloseGrid3dFile(&fp_model_grid_P, &fp_model_hdr_P);
+        CloseGrid3dFile(NULL, &fp_model_grid_P, &fp_model_hdr_P);
     }
     if (fp_model_grid_S != NULL) {
-        CloseGrid3dFile(&fp_model_grid_S, &fp_model_hdr_S);
+        CloseGrid3dFile(NULL, &fp_model_grid_S, &fp_model_hdr_S);
     }
 
     // AEH/AJL 20080709
@@ -664,12 +707,10 @@ cleanup_return:
         free_surface(model_surface + n);
     }
 
-
     if (bp_memory_stream != NULL) {
         free(bp_memory_stream);
         bp_memory_stream = NULL;
     }
-
 
     return (return_value);
 

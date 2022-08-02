@@ -36,17 +36,11 @@
 
 
 #ifndef MAXLINE
-#define MAXLINE 1025
+#define MAXLINE 1024    // 20200125 AJL - changed from 101 to 1204
 #endif
 
 #ifndef VERY_SMALL_DOUBLE
 #define VERY_SMALL_DOUBLE 1.0e-30
-#endif
-
-#ifdef EXTERN_MODE
-#define	EXTERN_TXT extern
-#else
-#define EXTERN_TXT
 #endif
 
 EXTERN_TXT char package_name[MAXLINE];
@@ -55,7 +49,7 @@ EXTERN_TXT char prog_ver[MAXLINE];
 EXTERN_TXT char prog_date[MAXLINE];
 EXTERN_TXT char prog_copyright[MAXLINE];
 EXTERN_TXT int message_flag;
-EXTERN_TXT char MsgStr[10 * MAXLINE];
+EXTERN_TXT char MsgStr[100 * MAXLINE];
 
 
 /*** function to display command usage */

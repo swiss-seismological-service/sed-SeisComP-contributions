@@ -74,12 +74,6 @@ typedef struct {
 }
 Gauss2LocParams;
 
-/* scatter paramters */
-typedef struct {
-    int npts; /* number of scatter points */
-}
-ScatterParams;
-
 /* station/inst/component parameters */
 typedef struct {
     char label[ARRIVAL_LABEL_LEN]; /* label (i.e. station name) */
@@ -116,13 +110,6 @@ typedef struct {
     double std_dev; /* std dev of time delay (sec) */
 }
 TimeDelayDesc;
-
-/* Phase Identification */
-typedef struct {
-    char phase[ARRIVAL_LABEL_LEN];
-    char id_string[MAXLINE];
-}
-PhaseIdent;
 
 
 
@@ -183,6 +170,47 @@ typedef struct {
 }
 MagDesc;
 
+/* Search PDF grid (PRIOR or POSTERIOR */
+// 20190510 AJL - added
+
+typedef struct {
+    int gridType; // grid type, e.g. GRID, OCT_TREE
+    double default_value; // prior value to use where prior undefined
+    char grid_file_path[FILENAME_MAX];
+    // GRID
+    GridDesc grid; // prior grid containing relative prior values over superset or subset of location search volume
+    // OCT-TREE
+    int nGrids;
+    Tree3D **tree3D;    // array of nGrids tree3D oct-trees
+    double *coherence;  // array of nGrids coherences for each corresponding tree3D
+    double coherence_min;
+    // minimum coherence to use for mapping coherence to NLL-cohernce pdf stack weight
+    double max_total_other_weight;
+    // maximum total of coherence weight for other events; if exceeded, other event coherences normalized to sum to this value
+    int max_count_other;  // 20211031 AJL - added
+    // maximum number of other events to include in pdf stack, Use negative value for no limit.
+    //   limit processing time and number of files open when a large number of events have high coherency.
+    double max_se3;
+    // maximum event se3 (ellipsoid.len3) to include event in pdf stack. Use negative value to disable this check.
+    //   Excludes events with poor location constraint and large pdf extent. Such event pdf's would only contribute noise to stack,
+    //   but due to potentially high complexity of stack pdf, including such pdf's may cause oct-tree search to get trapped
+    //   in a local minimum within this event pdf (especially if LOC_SEARCH init_num_cells_x/y/z are too few). When this trapping occurs, some NLL-coherence events may cluster far from
+    //   any events in SSST reference events (LOC_PATH), with unusual epicenter or depth.
+    //   May typically have same or similar value as COHERENCE_MAX_DIST
+    double max_mag_diff;  // 20220339 AJL - added
+    // maximum magnitude difference to include other event in pdf stack (-1 to disable).
+    //   Excludes events that are not likely to have waveform similarity with target due to differences in spectral peak.
+    //   May help avoid false high correlation due to filtering or clipping.
+    double min_mag;  // 20220339 AJL - added
+    // minimum magnitude to process event (-999 to disable).
+    //   Enables not processing smaller magnitude events, e.g. for avoiding possible noisy waveforms or for speeding up testing.
+    double *weight;  // array of nGrids weights (function of coherence and coherence_min) for each corresponding tree3D
+    // arrivals storage
+    ArrivalDesc** first_motion_arrivals; // arrivals with first-motion readings
+    int *nfirst_motion_arrivals; // number of arrivals with first-motion readings
+}
+SearchPdfGridDesc;
+
 
 
 /*------------------------------------------------------------*/
@@ -205,7 +233,8 @@ EXTERN_TXT int NumEvents;
 EXTERN_TXT int NumEventsLocated;
 EXTERN_TXT int NumLocationsCompleted;
 
-#define MAX_NUM_OBS_FILES 10000
+// 20200107 AJL  #define MAX_NUM_OBS_FILES 10000
+#define MAX_NUM_OBS_FILES 20000  // 20200107 AJL
 EXTERN_TXT int NumObsFiles;
 
 /* number of arrivals read from obs file */
@@ -232,19 +261,32 @@ EXTERN_TXT FILE *fp_model_hdr_S;
 EXTERN_TXT GridDesc model_grid_S;
 
 /* location search type (grid, simulated annealing, Metropolis, etc) */
-#define SEARCH_GRID  	0
-#define SEARCH_MET  	1
+#define SEARCH_GRID   0
+#define SEARCH_MET   1
 #define SEARCH_OCTTREE  2
 EXTERN_TXT int SearchType;
 
+#define PDF_GRID_UNDEF   0
+#define PDF_GRID_GRID   1
+#define PDF_GRID_OCT_TREE   2
+#define PDF_GRID_PRIOR   0
+#define PDF_GRID_POSTERIOR   1
+#define MAX_NUM_PDF_GRID_FILES 5000
+// location search prior  // 20190510 AJL - added
+EXTERN_TXT SearchPdfGridDesc SearchPrior;
+EXTERN_TXT int iUseSearchPrior;
+EXTERN_TXT SearchPdfGridDesc SearchPosterior;
+EXTERN_TXT int iUseSearchPosterior;
+
 /* location method (misfit, etc) */
-#define METH_UNDEF  		0
-#define METH_GAU_ANALYTIC  	1
-#define METH_GAU_TEST  		2
-#define METH_EDT  		3
-#define METH_EDT_BOX  		4
-#define METH_ML_OT  		5
-#define METH_OT_STACK  		6
+#define METH_UNDEF    0
+#define METH_GAU_ANALYTIC   1
+#define METH_GAU_TEST    2
+#define METH_EDT    3
+#define METH_EDT_BOX    4
+#define METH_ML_OT    5
+#define METH_OT_STACK    6
+#define METH_L1_NORM    7         // 20140515 AJL - added for NLDiffLoc
 EXTERN_TXT int LocMethod;
 EXTERN_TXT int EDT_use_otime_weight;
 EXTERN_TXT int EDT_otime_weight_active;
@@ -266,12 +308,14 @@ EXTERN_TXT int LocGridSave[MAX_NUM_LOCATION_GRIDS]; /* !should be in GridDesc */
 //EXTERN_TXT int Num3DGridReadToMemory, MaxNum3DGridMemory;
 
 /* related hypocenter file pointers */
-EXTERN_TXT FILE *pSumFileHypNLLoc[MAX_NUM_LOCATION_GRIDS];
-EXTERN_TXT FILE *pSumFileHypo71[MAX_NUM_LOCATION_GRIDS];
-EXTERN_TXT FILE *pSumFileHypoEll[MAX_NUM_LOCATION_GRIDS];
-EXTERN_TXT FILE *pSumFileHypoInv[MAX_NUM_LOCATION_GRIDS];
-EXTERN_TXT FILE *pSumFileHypoInvY2K[MAX_NUM_LOCATION_GRIDS];
-EXTERN_TXT FILE *pSumFileAlberto4[MAX_NUM_LOCATION_GRIDS];
+FILE *pSumFileHypNLLoc[MAX_NUM_LOCATION_GRIDS];
+FILE *pSumFileHypo71[MAX_NUM_LOCATION_GRIDS];
+FILE *pSumFileHypoEll[MAX_NUM_LOCATION_GRIDS];
+FILE *pSumFileHypoInv[MAX_NUM_LOCATION_GRIDS];
+FILE *pSumFileHypoInvY2K[MAX_NUM_LOCATION_GRIDS];
+FILE *pSumFileAlberto4[MAX_NUM_LOCATION_GRIDS];
+FILE *pSumFileFmamp[MAX_NUM_LOCATION_GRIDS];
+
 
 /* related flags */
 EXTERN_TXT int iWriteHypHeader[MAX_NUM_LOCATION_GRIDS];
@@ -285,9 +329,13 @@ EXTERN_TXT char HypoInverseArchiveSumHdr[MAXLINE_LONG];
 EXTERN_TXT int iSaveNLLocEvent, iSaveNLLocSum, iSaveNLLocOctree,
 iSaveHypo71Event, iSaveHypo71Sum,
 iSaveHypoEllEvent, iSaveHypoEllSum,
-iSaveHypoInvSum, iSaveHypoInvY2KArc, iSaveAlberto4Sum,
-iSaveSnapSum, iCalcSedOrigin, iSaveDecSec, iSaveNone;
+iSaveHypoInvSum, iSaveHypoInvY2KArc, iSaveAlberto4Sum, iSaveFmamp,
+iSaveSnapSum, iCalcSedOrigin, iSaveDecSec, iSavePublicID, iSaveNone;
+// 20170811 AJL - added to allow saving of expectation hypocenter results instead of maximum likelihood
+EXTERN_TXT int iSaveNLLocExpectation;
 
+// Arrival prior weighting flag (NLL_FORMAT_VER_2)
+EXTERN_TXT int iUseArrivalPriorWeights;
 
 /* station distance weighting flag. */
 EXTERN_TXT int iSetStationDistributionWeights;
@@ -299,21 +347,16 @@ EXTERN_TXT int NumForceOctTreeStaDenWt;
 
 EXTERN_TXT int iRejectDuplicateArrivals;
 
-/* phase identification */
-#define MAX_NUM_PHASE_ID 50
-EXTERN_TXT PhaseIdent PhaseID[MAX_NUM_PHASE_ID];
-EXTERN_TXT int NumPhaseID;
-
 /* Event Information extracted from phase file */
 EXTERN_TXT EventTimeExtract EventTime;
 EXTERN_TXT long int EventID;
 
 /* magnitude calculation */
-#define MAG_UNDEF  	0
-#define MAG_ML_HB  	1
-#define MAG_MD_FMAG  	2
+#define MAG_UNDEF   0
+#define MAG_ML_HB   1
+#define MAG_MD_FMAG   2
 EXTERN_TXT int NumMagnitudeMethods;
-#define MAX_NUM_MAG_METHODS  	2
+#define MAX_NUM_MAG_METHODS   2
 EXTERN_TXT MagDesc Magnitude[MAX_NUM_MAG_METHODS];
 
 /* station/inst/component parameters */
@@ -331,6 +374,11 @@ EXTERN_TXT int NumLocAlias;
 #define MAX_NUM_LOC_EXCLUDE 1000
 EXTERN_TXT ExcludeDesc LocExclude[MAX_NUM_LOC_EXCLUDE];
 EXTERN_TXT int NumLocExclude;
+
+/* include arrivals */
+#define MAX_NUM_LOC_INCLUDE 1000
+EXTERN_TXT ExcludeDesc LocInclude[MAX_NUM_LOC_INCLUDE];
+EXTERN_TXT int NumLocInclude;
 
 /* station delays */
 #define WRITE_RESIDUALS 0
@@ -359,8 +407,8 @@ EXTERN_TXT int topo_surface_index; // topo surface index is velmod.h.MAX_SURFACE
 
 
 /* station list */
-EXTERN_TXT int NumStations;
-EXTERN_TXT SourceDesc StationList[X_MAX_NUM_ARRIVALS];
+int NumStationPhases;
+SourceDesc StationPhaseList[X_MAX_NUM_ARRIVALS];
 
 /* fixed origin time parameters */
 EXTERN_TXT int FixOriginTimeFlag;
@@ -375,6 +423,7 @@ EXTERN_TXT int MetStartSave; /* number of sample to begin saving */
 EXTERN_TXT int MetSkip; /* number of samples to wait between saves */
 EXTERN_TXT double MetStepInit; /* initial step size (km) (< 0.0 for auto) */
 EXTERN_TXT double MetStepMin; /* minimum step size (km) */
+EXTERN_TXT double MetStepMax; /* maximum step size (km) (NLDiffLoc) */
 EXTERN_TXT double MetStepFact; /* step size factor */
 EXTERN_TXT double MetProbMin; /* minimum likelihood necessary after learn */
 EXTERN_TXT double MetVelocity; /* velocity for conversion of distance to time */
@@ -393,9 +442,9 @@ EXTERN_TXT ResultTreeNode* resultTreeRoot; /* Octtree likelihood*volume results 
 /* take-off angles */
 EXTERN_TXT int angleMode; /* angle mode - ANGLE_MODE_NO, ANGLE_MODE_YES */
 EXTERN_TXT int iAngleQualityMin; /* minimum quality for angles to be used */
-#define ANGLE_MODE_NO	0
-#define ANGLE_MODE_YES	1
-#define ANGLE_MODE_UNDEF	-1
+#define ANGLE_MODE_NO 0
+#define ANGLE_MODE_YES 1
+#define ANGLE_MODE_UNDEF -1
 
 
 /* otime list */
@@ -450,7 +499,7 @@ StaStatNode *InstallStaStatInTable(int, char*, char*, int, double,
 int FreeStaStatTable(int ntable);
 int WriteStaStatTable(int, FILE *, double, int, double,
         double, double, double, double, double, double, int);
-void UpdateStaStat(int, ArrivalDesc *, int, double, double, double);
+void UpdateStaStat(int, ArrivalDesc *, int, double, double, double, double);
 
 /** end of hashtable routines */
 /*------------------------------------------------------------*/
@@ -464,14 +513,14 @@ void UpdateStaStat(int, ArrivalDesc *, int, double, double, double);
 int NLLoc(char *pid_main, char *fn_control_main, char **param_line_array, int n_param_lines, char **obs_line_array, int n_obs_lines,
         int return_locations, int return_oct_tree_grid, int return_scatter_sample, LocNode **ploc_list_head);
 
-int Locate(int ngrid, char* fn_root_out, int numArrivalsReject, int return_locations, int return_oct_tree_grid, int return_scatter_sample, LocNode **ploc_list_head);
+int Locate(int ngrid, char* fn_loc_obs, char* fn_root_out, int numArrivalsReject, int return_locations, int return_oct_tree_grid, int return_scatter_sample, LocNode **ploc_list_head);
 
 int checkObs(ArrivalDesc *arrival, int nobs);
 int ExtractFilenameInfo(char*, char*);
+int is_nll_control_json(FILE* fp_input);
 int ReadNLLoc_Input(FILE* fp_input, char **param_line_array, int n_param_lines);
 int GetNLLoc_Grid(char*);
 int GetNLLoc_HypOutTypes(char*);
-int GetPhaseID(char*);
 int GetStaWeight(char* line1);
 int GetNLLoc_Gaussian(char*);
 int GetNLLoc_Gaussian2(char*);
@@ -481,29 +530,30 @@ int GetNLLoc_Magnitude(char*);
 int GetNLLoc_Files(char*);
 int GetNLLoc_Method(char*);
 int GetNLLoc_SearchType(char*);
+int GetNLLoc_PdfGrid(char*, int);
 int GetNLLoc_FixOriginTime(char*);
 int GetObservations(FILE*, char*, char*, ArrivalDesc*, int*, int*, int*, int, HypoDesc*, int*, int*, int);
-int GetNextObs(FILE*, ArrivalDesc *, char*, int);
-void removeSpace(char *str);
-int IsPhaseID(char *, char *);
+int GetNextObs(HypoDesc* phypo, FILE*, ArrivalDesc *, char*, int);
 int IsGoodDate(int, int, int);
-int EvalPhaseID(char *, char *);
 int ReadArrivalSheets(int, ArrivalDesc*, double);
 int IsSameArrival(ArrivalDesc *, int, int, char *);
 int IsDuplicateArrival(ArrivalDesc *, int, int, int);
 int FindDuplicateTimeGrid(ArrivalDesc *arrival, int num_arrivals, int ntest);
 
-int WriteHypo71(FILE *, HypoDesc* , ArrivalDesc* , int , char* , int , int );
-int WriteHypoEll(FILE *, HypoDesc* , ArrivalDesc* , int , char* , int , int );
+int WriteHypo71(FILE *, HypoDesc*, ArrivalDesc*, int, char*, int, int);
+int WriteHypoEll(FILE *, HypoDesc*, ArrivalDesc*, int, char*, int, int);
 int WriteHypoInverseArchive(FILE *fpio, HypoDesc *phypo, ArrivalDesc *parrivals, int narrivals,
         char *filename, int writeY2000, int write_arrivals, double arrivalWeightMax);
-int WriteHypoAlberto4(FILE *, HypoDesc* , ArrivalDesc* , int , char* );
+int WriteHypoAlberto4(FILE *, HypoDesc*, ArrivalDesc*, int, char*);
+int WriteHypoFmamp(FILE *fpio, HypoDesc* phypo, ArrivalDesc* parrivals, int narrivals, char* filename, int write_header);
+int WriteHypoFmampSearchPosterior(SearchPdfGridDesc *searchPdfGrid, FILE *fpio, HypoDesc* phypo, char* filename, int write_header);
 int OpenSummaryFiles(char *, char *);
 int CloseSummaryFiles();
 
 int GetCompDesc(char*);
 int GetLocAlias(char*);
 int GetLocExclude(char* line1);
+int GetLocInclude(char* line1);
 int GetTimeDelays(char*);
 int GetTimeDelaySurface(char*);
 
@@ -515,38 +565,43 @@ int LocMetropolis(int, int, int, ArrivalDesc *,
         GridDesc*, GaussLocParams*, HypoDesc*, WalkParams*, float*);
 int SaveBestLocation(OctNode* poct_node, int num_arr_total, int num_arr_loc, ArrivalDesc *arrival,
         GridDesc* ptgrid, GaussLocParams* gauss_par, HypoDesc* phypo,
-        double misfit_max, int iGridType, double cell_diagonal_time_var_best, double cell_diagonal_best, double cell_volume_best);
+        double misfit_max, int iGridType, int ignore_pred_travel_time_best,
+        double cell_diagonal_time_var_best, double cell_diagonal_best, double cell_volume_best);
 int ConstWeightMatrix(int, ArrivalDesc*, GaussLocParams*);
 int CleanWeightMatrix();
 void CalcCenteredTimesObs(int, ArrivalDesc*, GaussLocParams*, HypoDesc*);
-INLINE void CalcCenteredTimesPred(int, ArrivalDesc*, GaussLocParams*);
-INLINE double CalcSolutionQuality(OctNode* poct_node, int num_arrivals, ArrivalDesc *arrival, GaussLocParams* gauss_par, int itype,
-        double* pmisfit, double* potime, double* potime_var, double cell_diagonal_time_var, double cell_diagonal, double cell_volume, double* effective_cell_size, double *pot_variance_factor);
-INLINE double CalcSolutionQuality_GAU_ANALYTIC(int, ArrivalDesc*, GaussLocParams*, int, double*, double*);
-INLINE double CalcSolutionQuality_GAU_TEST(int, ArrivalDesc*, GaussLocParams*, int, double*, double*);
-INLINE double CalcSolutionQuality_EDT(int num_arrivals, ArrivalDesc *arrival, GaussLocParams* gauss_par, int itype, double* pmisfit, double* potime, double* potime_var, double cell_diagonal_time_var, int method_box);
-INLINE double CalcSolutionQuality_OT_STACK(OctNode* poct_node, int num_arrivals, ArrivalDesc *arrival,
+void CalcCenteredTimesPred(int, ArrivalDesc*, GaussLocParams*);
+double CalcSolutionQuality(double hypo_x, double hypo_y, double hypo_z, OctNode* poct_node, int num_arrivals, ArrivalDesc *arrival, GaussLocParams* gauss_par, int itype,
+        double* pmisfit, double* potime, double* potime_var, double cell_diagonal_time_var, double cell_diagonal, double cell_volume, double* effective_cell_size, double *pot_variance_factor, double *prior);
+double CalcSolutionQuality_GAU_ANALYTIC(int, ArrivalDesc*, GaussLocParams*, int, double*, double*);
+double CalcSolutionQuality_GAU_TEST(int, ArrivalDesc*, GaussLocParams*, int, double*, double*);
+double CalcSolutionQuality_L1_NORM(int num_arrivals, ArrivalDesc *arrival,
+        GaussLocParams* gauss_par, int itype, double* pmisfit, double* potime);
+double CalcSolutionQuality_EDT(int num_arrivals, ArrivalDesc *arrival, GaussLocParams* gauss_par, int itype, double* pmisfit, double* potime, double* potime_var, double cell_diagonal_time_var, int method_box);
+double CalcSolutionQuality_OT_STACK(OctNode* poct_node, int num_arrivals, ArrivalDesc *arrival,
         GaussLocParams* gauss_par, int itype, double* pmisfit, double* potime, double* potime_var,
         double cell_half_diagonal_time_range, double cell_diagonal, double cell_volume, double* effective_cell_size, double *pot_variance_factor);
-INLINE double CalcSolutionQuality_ML_OT(int num_arrivals, ArrivalDesc *arrival, GaussLocParams* gauss_par, int itype, double* pmisfit, double* potime, double* potime_var, double cell_diagonal_time_var, int method_box);
-INLINE double calc_maximum_likelihood_ot_sort(
+double CalcSolutionQuality_ML_OT(int num_arrivals, ArrivalDesc *arrival, GaussLocParams* gauss_par, int itype, double* pmisfit, double* potime, double* potime_var, double cell_diagonal_time_var, int method_box);
+double calc_maximum_likelihood_ot_sort(
         OctNode* poct_node, int num_arrivals, ArrivalDesc *arrival,
         double cell_half_diagonal_time_range, double cell_diagonal, double cell_volume, double *pot_var, int icalc_otime,
         double *plog_prob_max, double *pot_stack_weight, double* effective_cell_size, double *pot_variance_factor);
-INLINE double calc_maximum_likelihood_ot(double *ot_ml_arrival, double *ot_ml_arrival_edt_sum, int num_arrivals, ArrivalDesc *arrival, MatrixDouble edtmtx, double *pot_ml_var, int iwrite_errors,
+double calc_maximum_likelihood_ot(double *ot_ml_arrival, double *ot_ml_arrival_edt_sum, int num_arrivals, ArrivalDesc *arrival, MatrixDouble edtmtx, double *pot_ml_var, int iwrite_errors,
         double *pprob_max);
-INLINE double calc_likelihood_ot(double *ot_ml_arrival, double *ot_ml_arrival_edt_sum, int num_arrivals, ArrivalDesc *arrival, MatrixDouble edtmtx, double time);
-INLINE double calc_variance_ot(double *ot_ml_arrival, double *ot_ml_arrival_edt_sum, int num_arrivals, ArrivalDesc *arrival, MatrixDouble edtmtx, double expectation_time);
+double calc_likelihood_ot(double *ot_ml_arrival, double *ot_ml_arrival_edt_sum, int num_arrivals, ArrivalDesc *arrival, MatrixDouble edtmtx, double time);
+double calc_variance_ot(double *ot_ml_arrival, double *ot_ml_arrival_edt_sum, int num_arrivals, ArrivalDesc *arrival, MatrixDouble edtmtx, double expectation_time);
 long double CalcMaxLikeOriginTime(int, ArrivalDesc*, GaussLocParams*);
 int NormalizeWeights(int num_arrivals, ArrivalDesc *arrival);
-INLINE void UpdateProbabilisticResiduals(int, ArrivalDesc *, double);
+void UpdateProbabilisticResiduals(int, ArrivalDesc *, double);
 int CalcConfidenceIntrvl(GridDesc*, HypoDesc*, char*);
 int HomogDateTime(ArrivalDesc*, int, HypoDesc*);
 int CheckAbsoluteTiming(ArrivalDesc *arrival, int num_arrivals);
+int hypotime2hrminsec(long double phypo_time, int *phypo_hour, int *phypo_min, double *phypo_sec);
 int StdDateTime(ArrivalDesc*, int, HypoDesc*);
-int SetOutName(ArrivalDesc *arrival, char* out_file_root, char* out_file, char lastfile[FILENAME_MAX], int isec, int *pncount);
-int SaveLocation(HypoDesc*, int, char *, int, char *, int, GaussLocParams *);
-int GenEventScatterGrid(GridDesc*, HypoDesc*, ScatterParams*, char*);
+int SetOutName(ArrivalDesc *arrival, char* out_file_root, char* out_file,
+        char* lastfile, int isec, int ipublic_id, char* public_id, int *pncount);
+int SaveLocation(HypoDesc* hypo, int ngrid, char* fnobs, char *fnout, int numArrivalsReject,
+        char* loctypename, int isave_phases, GaussLocParams* gauss_par);
 void InitializeArrivalFields(ArrivalDesc *);
 int isExcluded(char *label, char *phase);
 int EvaluateArrivalAlias(ArrivalDesc *);
@@ -559,9 +614,9 @@ double CalcArrivalDistances(ArrivalDesc *arrival, int num_arrivals, double *pmax
 int CalcArrivalCounts(ArrivalDesc *arrival, int num_arrivals, int num_arrivals_read, int* passociatedPhaseCount, int* passociatedStationCount, int* pusedStationCount, int* pdepthPhaseCount);
 void InitializeMetropolisWalk(GridDesc*, ArrivalDesc*, int,
         WalkParams*, int, double);
-INLINE int GetNextMetropolisSample(WalkParams*, double, double,
+int GetNextMetropolisSample(WalkParams*, double, double,
         double, double, double, double, double*, double*, double*);
-INLINE int MetropolisTest(double, double);
+int MetropolisTest(double, double);
 
 double CalculateVpVsEstimate(HypoDesc* phypo, ArrivalDesc* parrivals, int narrivals);
 
@@ -572,8 +627,6 @@ double Calc_ML_HuttonBoore(double amplitude, double dist, double depth, double s
 double Calc_MD_FMAG(double coda_dur, double dist, double depth, double sta_corr,
         double fmag_c1, double fmag_c2, double fmag_c3, double fmag_c4, double fmag_c5);
 
-int addToStationList(SourceDesc *stations, int numStations, ArrivalDesc *arrival, int nArrivals);
-int WriteStationList(FILE*, SourceDesc*, int);
 int setStationDistributionWeights(SourceDesc *stations, int numStations, ArrivalDesc *arrival, int nArrivals);
 
 int getTravelTimes(ArrivalDesc *arrival, int num_arr_loc, double xval, double yval, double zval);
@@ -586,7 +639,7 @@ int LocOctree(int ngrid, int num_arr_total, int num_arr_loc,
         GridDesc* ptgrid, GaussLocParams* gauss_par, HypoDesc* phypo,
         OcttreeParams* pParams, Tree3D* pOctTree, float* fdata,
         double *poct_node_value_max, double *poct_tree_integral);
-INLINE long double LocOctree_core(int ngrid, double xval, double yval, double zval,
+long double LocOctree_core(int ngrid, double xval, double yval, double zval,
         int num_arr_loc, ArrivalDesc *arrival,
         OctNode* poct_node,
         int icalc_cell_diagonal_time_var, double *volume_min,
