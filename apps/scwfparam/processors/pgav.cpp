@@ -30,6 +30,7 @@
 #include <seiscomp/math/filter/stalta.h>
 #include <seiscomp/math/restitution/fft.h>
 
+#include <cmath>
 #include <fstream>
 
 
@@ -1029,7 +1030,7 @@ void PGAV::process(const Record *record, const DoubleArray &) {
 	// Aftershock removal
 	// -------------------------------------------------------------------
 	if ( _config.aftershockRemoval ) {
-		double d = std::max(Math::round(*_duration / 3), _config.preEventWindowLength);
+		double d = std::max(round(*_duration / 3), _config.preEventWindowLength);
 		int tcut = n;
 
 		int j = 0;
