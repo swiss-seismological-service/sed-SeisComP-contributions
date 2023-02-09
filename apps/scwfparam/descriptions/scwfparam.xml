@@ -549,6 +549,14 @@
 		 into the core description to have everything in one place. -->
 	<binding module="scwfparam">
 		<configuration>
+			<parameter name="commtype" type="string" default="DIG">
+				<description>
+				Defines the communication type of the station which is forwarded
+				without modification to the Shakemap input file in version 4 or
+				greater. Reference:
+				https://usgs.github.io/shakemap/manual4_0/sg_input_formats.html.
+				</description>
+			</parameters>
 			<group name="amplitudes">
 				<group name="PGAV">
 					<parameter name="saturationThreshold" type="string">

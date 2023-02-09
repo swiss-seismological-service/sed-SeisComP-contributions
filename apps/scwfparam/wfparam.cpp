@@ -2660,6 +2660,17 @@ void WFParam::writeShakeMapComponent(const PGAVResult *res, bool &stationTag,
 		return;
 	}
 
+	string commType = "DIG";
+	{
+		auto it = _keys.find(res->streamID.networkCode() + '.' + res->streamID.stationCode());
+		if ( it != _keys.end() ) {
+			Util::KeyValues *params = it->second.get();
+			if ( params ) {
+				params->getString(commType, "commtype");
+			}
+		}
+	}
+
 	if ( !stationTag ) {
 		*os << "  <station code=\"" << res->streamID.stationCode() << "\""
 			<< " name=\"" << res->streamID.stationCode() << "\""
@@ -2668,6 +2679,8 @@ void WFParam::writeShakeMapComponent(const PGAVResult *res, bool &stationTag,
 			*os << " source=\"" << loc->station()->network()->archive() << "\"";
 		if ( sensor )
 			*os << " insttype=\"" << sensor->model() << "\"";
+		if ( !commType.empty() )
+			*os << " commtype=\"" << commType << "\"";
 		*os << " lat=\"" << loc->latitude() << "\""
 			<< " lon=\"" << loc->longitude() << "\""
 			<< ">" << endl;
