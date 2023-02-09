@@ -454,6 +454,7 @@ WFParam::WFParam(int argc, char **argv) : Application(argc, argv) {
 	NEW_OPT_CLI(_config.dumpRecords, "Mode", "dump-records",
 	            "Dumps all received records (binary) to [eventid].recs", false, true);
 	NEW_OPT(_config.shakemapTargetVersion, "wfparam.output.shakeMap.version");
+	NEW_OPT(_config.organization, "organization");
 
 	/*
 	cout << "<configuration-options>" << endl;
@@ -2508,8 +2509,10 @@ void WFParam::collectResults() {
 				*os << "<!DOCTYPE earthquake SYSTEM \"earthquake.dtd\">" << endl;
 				*os << "<earthquake id=\"" << shakeMapEventID << "\"";
 
-				if ( _config.shakemapTargetVersion >= 4 )
-					*os << " netid=\"" << agencyID() << "\"";
+				if ( _config.shakemapTargetVersion >= 4 ) {
+					*os << " netid=\"" << agencyID() << "\""
+					    << " network=\"" << _config.organization << "\"";
+				}
 
 				*os << " lat=\"" << org->latitude().value() << "\""
 				    << " lon=\"" << org->longitude().value() << "\""

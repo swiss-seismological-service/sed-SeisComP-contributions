@@ -210,6 +210,7 @@ class WFParam : public Application {
 			bool        dumpRecords;
 
 			int         shakemapTargetVersion;
+			std::string organization;
 
 			// Cron options
 			int         updateDelay;
