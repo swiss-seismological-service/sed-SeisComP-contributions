@@ -556,7 +556,7 @@
 				greater. Reference:
 				https://usgs.github.io/shakemap/manual4_0/sg_input_formats.html.
 				</description>
-			</parameters>
+			</parameter>
 			<group name="amplitudes">
 				<group name="PGAV">
 					<parameter name="saturationThreshold" type="string">
