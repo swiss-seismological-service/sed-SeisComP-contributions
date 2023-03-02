@@ -382,6 +382,14 @@
 							Enables/disables ShakeMap XML output.
 							</description>
 						</parameter>
+						<parameter name="pgm" type="list:string" default="pga, pgv, psa03, psa10, psa30">
+							<description>
+							Define a list of pg values to be forwarded to
+							ShakeMap in version 4 or later.
+							The period xx in psa must be in the list of
+							naturalPeriods and must not exceed 9.9s.
+							</description>
+						</parameter>
 						<parameter name="path" type="string" default="@LOGDIR@/shakemaps">
 							<description>
 							Specifies the ShakeMap XML output path. This is only used if

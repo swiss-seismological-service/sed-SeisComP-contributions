@@ -254,12 +254,15 @@ WFParam::Config::Config() {
 	padLength = -1;
 
 	enableShortEventID = false;
-	enableShakeMapXMLOutput = true;
-	shakeMapOutputPath = "@LOGDIR@/shakemaps";
-	shakeMapOutputScriptWait = true;
-	shakeMapOutputSC3EventID = false;
-	shakeMapOutputRegionName = false;
-	shakeMapXMLEncoding = "UTF-8";
+	shakeMap.output.enable = true;
+	shakeMap.output.path = "@LOGDIR@/shakemaps";
+	shakeMap.output.scriptWait = true;
+	shakeMap.output.SC3EventID = false;
+	shakeMap.output.regionName = false;
+	shakeMap.output.XMLEncoding = "UTF-8";
+	shakeMap.output.useMaximumOfHorizontals = false;
+	shakeMap.output.version = 3;
+	shakeMap.output.pgm = {"pga", "pgv", "psa03", "psa10", "psa30"};
 
 	waveformOutputPath = "@LOGDIR@/shakemaps/waveforms";
 	waveformOutputEventDirectory = false;
@@ -273,8 +276,6 @@ WFParam::Config::Config() {
 	runningAcquisitionTimeout = 2;
 
 	eventMaxIdleTime = 3600;
-
-	useMaximumOfHorizontals = false;
 
 	testMode = false;
 	offline = false;
@@ -292,7 +293,6 @@ WFParam::Config::Config() {
 	magnitudeTolerance = 0.5;
 
 	dumpRecords = false;
-	shakemapTargetVersion = 3;
 }
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -370,6 +370,11 @@ WFParam::WFParam(int argc, char **argv) : Application(argc, argv) {
 	_processingInfoOutput = NULL;
 
 	_acquisitionTimeout = 0;
+	_wantShakeMapPGA = true;
+	_wantShakeMapPGV = true;
+	_wantShakeMapPSAPeriods.push_back(PeriodID("psa03", 0.3));
+	_wantShakeMapPSAPeriods.push_back(PeriodID("psa10", 1.0));
+	_wantShakeMapPSAPeriods.push_back(PeriodID("psa30", 3.0));
 
 	NEW_OPT(_config.processingLogfile, "wfparam.logfile");
 	NEW_OPT(_config.streamsWhiteList, "wfparam.streams.whitelist");
@@ -425,14 +430,16 @@ WFParam::WFParam(int argc, char **argv) : Application(argc, argv) {
 	NEW_OPT(_config.spectraOutputPath, "wfparam.output.spectra.path");
 	NEW_OPT(_config.spectraOutputEventDirectory, "wfparam.output.spectra.withEventDirectory");
 	NEW_OPT(_config.enableShortEventID, "wfparam.output.shortEventID");
-	NEW_OPT(_config.enableShakeMapXMLOutput, "wfparam.output.shakeMap.enable");
-	NEW_OPT(_config.useMaximumOfHorizontals, "wfparam.output.shakeMap.maximumOfHorizontals");
-	NEW_OPT(_config.shakeMapOutputPath, "wfparam.output.shakeMap.path");
-	NEW_OPT(_config.shakeMapOutputScript, "wfparam.output.shakeMap.script");
-	NEW_OPT(_config.shakeMapOutputScriptWait, "wfparam.output.shakeMap.synchronous");
-	NEW_OPT(_config.shakeMapOutputSC3EventID, "wfparam.output.shakeMap.SC3EventID");
-	NEW_OPT(_config.shakeMapOutputRegionName, "wfparam.output.shakeMap.regionName");
-	NEW_OPT(_config.shakeMapXMLEncoding, "wfparam.output.shakeMap.encoding");
+	NEW_OPT(_config.shakeMap.output.enable, "wfparam.output.shakeMap.enable");
+	NEW_OPT(_config.shakeMap.output.pgm, "wfparam.output.shakeMap.pgm");
+	NEW_OPT(_config.shakeMap.output.useMaximumOfHorizontals, "wfparam.output.shakeMap.maximumOfHorizontals");
+	NEW_OPT(_config.shakeMap.output.path, "wfparam.output.shakeMap.path");
+	NEW_OPT(_config.shakeMap.output.script, "wfparam.output.shakeMap.script");
+	NEW_OPT(_config.shakeMap.output.scriptWait, "wfparam.output.shakeMap.synchronous");
+	NEW_OPT(_config.shakeMap.output.SC3EventID, "wfparam.output.shakeMap.SC3EventID");
+	NEW_OPT(_config.shakeMap.output.regionName, "wfparam.output.shakeMap.regionName");
+	NEW_OPT(_config.shakeMap.output.XMLEncoding, "wfparam.output.shakeMap.encoding");
+	NEW_OPT(_config.shakeMap.output.version, "wfparam.output.shakeMap.version");
 	NEW_OPT(_config.magnitudeTolerance, "wfparam.magnitudeTolerance");
 	NEW_OPT_CLI(_config.fExpiry, "Generic", "expiry,x",
 	            "Time span in hours after which objects expire", true);
@@ -453,7 +460,6 @@ WFParam::WFParam(int argc, char **argv) : Application(argc, argv) {
 	            "Test mode, no messages are sent", false, true);
 	NEW_OPT_CLI(_config.dumpRecords, "Mode", "dump-records",
 	            "Dumps all received records (binary) to [eventid].recs", false, true);
-	NEW_OPT(_config.shakemapTargetVersion, "wfparam.output.shakeMap.version");
 	NEW_OPT(_config.organization, "organization");
 
 	/*
@@ -658,10 +664,13 @@ bool WFParam::validateParameters() {
 
 	// Resolve placeholders
 	_config.processingLogfile = Environment::Instance()->absolutePath(_config.processingLogfile);
-	_config.shakeMapOutputScript = Environment::Instance()->absolutePath(_config.shakeMapOutputScript);
-	_config.shakeMapOutputPath = Environment::Instance()->absolutePath(_config.shakeMapOutputPath);
-	if ( !_config.shakeMapOutputPath.empty() && *_config.shakeMapOutputPath.rbegin() != '/' )
-		_config.shakeMapOutputPath += '/';
+	_config.shakeMap.output.script = Environment::Instance()->absolutePath(_config.shakeMap.output.script);
+	if ( _config.shakeMap.output.path != "-" ) {
+		_config.shakeMap.output.path = Environment::Instance()->absolutePath(_config.shakeMap.output.path);
+		if ( !_config.shakeMap.output.path.empty() && *_config.shakeMap.output.path.rbegin() != '/' ) {
+			_config.shakeMap.output.path += '/';
+		}
+	}
 
 	_config.waveformOutputPath = Environment::Instance()->absolutePath(_config.waveformOutputPath);
 	if ( !_config.waveformOutputPath.empty() && *_config.waveformOutputPath.rbegin() != '/' )
@@ -688,12 +697,12 @@ bool WFParam::validateParameters() {
 		return false;
 	}
 
-	if ( _config.enableShakeMapXMLOutput ) {
-		if ( _config.shakeMapOutputPath != "-" &&
-		     !Util::pathExists(_config.shakeMapOutputPath) ) {
-			if ( !Util::createPath(_config.shakeMapOutputPath) ) {
+	if ( _config.shakeMap.output.enable ) {
+		if ( _config.shakeMap.output.path != "-" &&
+		     !Util::pathExists(_config.shakeMap.output.path) ) {
+			if ( !Util::createPath(_config.shakeMap.output.path) ) {
 				SEISCOMP_ERROR("Unable to create shakeMap output path: %s",
-				               _config.shakeMapOutputPath.c_str());
+				               _config.shakeMap.output.path.c_str());
 				return false;
 			}
 		}
@@ -720,7 +729,7 @@ bool WFParam::validateParameters() {
 	}
 
 	// Check and add 5% damping if shakemap output is enabled
-	if ( _config.enableShakeMapXMLOutput ) {
+	if ( _config.shakeMap.output.enable ) {
 		std::vector<double>::iterator it =
 			std::find(_config.dampings.begin(), _config.dampings.end(), 5);
 		if ( it == _config.dampings.end() )
@@ -738,6 +747,44 @@ bool WFParam::validateParameters() {
 bool WFParam::init() {
 	if ( !Application::init() )
 		return false;
+
+	if ( _config.shakeMap.output.enable && _config.shakeMap.output.version >= 4 ) {
+		_wantShakeMapPGA = _wantShakeMapPGV = false;
+		_wantShakeMapPSAPeriods.clear();
+
+		for ( auto pgm : _config.shakeMap.output.pgm ) {
+			if ( pgm == "pga" ) {
+				_wantShakeMapPGA = true;
+			}
+			else if ( pgm == "pgv" ) {
+				_wantShakeMapPGV = true;
+			}
+			else if ( pgm.compare(0, 3, "psa") == 0 ) {
+				auto period = pgm.substr(3);
+				if ( period.size() != 2 ) {
+					SEISCOMP_ERROR("Invalid psa definition: period must be of length 2: %s", pgm.c_str());
+					return false;
+				}
+
+				if ( period[0] < '0' || period[0] > '9' ||
+				     period[1] < '0' || period[1] > '9' ) {
+					SEISCOMP_ERROR("Invalid psa definition: period must be a numeric value: %s", pgm.c_str());
+					return false;
+				}
+
+				_wantShakeMapPSAPeriods.push_back(
+					PeriodID(
+						pgm,
+						static_cast<double>(period[0] - '0') +
+						static_cast<double>(period[1] - '0') * 0.1
+					)
+				);
+
+				SEISCOMP_DEBUG("+ ShakeMap output PSA period %f",
+				               _wantShakeMapPSAPeriods.back().second);
+			}
+		}
+	}
 
 	closeStream();
 
@@ -2379,13 +2426,12 @@ void WFParam::collectResults() {
 
 		// Update psa03, psa10 and psa30 values
 		it->psa03 = it->psa10 = it->psa30 = -1.0;
+		it->responseSpectrum = nullptr;
 
-		const PGAV::ResponseSpectrum *spectrum = NULL;
 		const PGAV::ResponseSpectra &spec = it->responseSpectra;
-		PGAV::ResponseSpectra::const_iterator it2;
-		for ( it2 = spec.begin(); it2 != spec.end(); ++it2 ) {
-			if ( it2->first == 5 ) {
-				spectrum = &it2->second;
+		for ( auto &item : spec ) {
+			if ( item.first == 5 ) {
+				it->responseSpectrum = &item.second;
 				break;
 			}
 		}
@@ -2394,22 +2440,22 @@ void WFParam::collectResults() {
 		int missing = 3;
 
 		// Find psa03, psa10 and psa30 values
-		if ( spectrum ) {
-			for ( size_t i = 0; i < spectrum->size(); ++i ) {
-				if ( !got03 && (*spectrum)[i].period == 0.3 ) {
-					it->psa03 = (*spectrum)[i].psa;
+		if ( it->responseSpectrum ) {
+			for ( size_t i = 0; i < it->responseSpectrum->size(); ++i ) {
+				if ( !got03 && (*it->responseSpectrum)[i].period == 0.3 ) {
+					it->psa03 = (*it->responseSpectrum)[i].psa;
 					got03 = true;
 					--missing;
 					if ( !missing ) break;
 				}
-				else if ( !got10 && (*spectrum)[i].period== 1.0 ) {
-					it->psa10 = (*spectrum)[i].psa;
+				else if ( !got10 && (*it->responseSpectrum)[i].period== 1.0 ) {
+					it->psa10 = (*it->responseSpectrum)[i].psa;
 					got10 = true;
 					--missing;
 					if ( !missing ) break;
 				}
-				else if ( !got30 && (*spectrum)[i].period == 3.0 ) {
-					it->psa30 = (*spectrum)[i].psa;
+				else if ( !got30 && (*it->responseSpectrum)[i].period == 3.0 ) {
+					it->psa30 = (*it->responseSpectrum)[i].psa;
 					got30 = true;
 					--missing;
 					if ( !missing ) break;
@@ -2447,23 +2493,23 @@ void WFParam::collectResults() {
 			SEISCOMP_ERROR("Sending result messages failed");
 	}
 
-	if ( _config.enableShakeMapXMLOutput && (newResultsAvailable || _config.forceShakemap) ) {
+	if ( _config.shakeMap.output.enable && (newResultsAvailable || _config.forceShakemap) ) {
 		ofstream of;
 		Core::Time timestamp = Core::Time::GMT();
 		string eventPath, path;
 		string eventID, shakeMapEventID, locstring;
-		bool writeToFile = _config.shakeMapOutputPath != "-";
+		bool writeToFile = _config.shakeMap.output.path != "-";
 
 		eventID = generateEventID(evt.get());
 		if ( eventID.empty() )
 			eventID = timestamp.toString("%Y%m%d%H%M%S");
 
-		if ( _config.shakeMapOutputSC3EventID && evt )
+		if ( _config.shakeMap.output.SC3EventID && evt )
 			shakeMapEventID = evt->publicID();
 		else
 			shakeMapEventID = eventID;
 
-		if ( _config.shakeMapOutputRegionName ) {
+		if ( _config.shakeMap.output.regionName ) {
 			// Load event descriptions if not already there
 			if ( query() && (evt->eventDescriptionCount() == 0) && !_eventParameters )
 				query()->loadEventDescriptions(evt.get());
@@ -2479,8 +2525,8 @@ void WFParam::collectResults() {
 		}
 
 		if ( writeToFile ) {
-			eventPath = _config.shakeMapOutputPath + shakeMapEventID + "/";
-			if ( _config.shakemapTargetVersion < 4 )
+			eventPath = _config.shakeMap.output.path + shakeMapEventID + "/";
+			if ( _config.shakeMap.output.version < 4 )
 				path = eventPath + "input";
 			else
 				path = eventPath + "current";
@@ -2505,11 +2551,11 @@ void WFParam::collectResults() {
 			try {
 				int year, mon, day, hour, min, sec;
 				org->time().value().get(&year, &mon, &day, &hour, &min, &sec);
-				*os << "<?xml version=\"1.0\" encoding=\"" << _config.shakeMapXMLEncoding << "\" standalone=\"yes\"?>" << endl;
+				*os << "<?xml version=\"1.0\" encoding=\"" << _config.shakeMap.output.XMLEncoding << "\" standalone=\"yes\"?>" << endl;
 				*os << "<!DOCTYPE earthquake SYSTEM \"earthquake.dtd\">" << endl;
 				*os << "<earthquake id=\"" << shakeMapEventID << "\"";
 
-				if ( _config.shakemapTargetVersion >= 4 ) {
+				if ( _config.shakeMap.output.version >= 4 ) {
 					*os << " netid=\"" << agencyID() << "\""
 					    << " network=\"" << _config.organization << "\"";
 				}
@@ -2519,7 +2565,7 @@ void WFParam::collectResults() {
 				    << " depth=\"" << org->depth().value() << "\""
 				    << " mag=\"" << mag->magnitude().value() << "\"";
 
-				if ( _config.shakemapTargetVersion < 4 )
+				if ( _config.shakeMap.output.version < 4 )
 					*os << " year=\"" << year << "\""
 					    << " month=\"" << mon << "\""
 					    << " day=\"" << day << "\""
@@ -2547,14 +2593,14 @@ void WFParam::collectResults() {
 			os = &of;
 		}
 
-		*os << "<?xml version=\"1.0\" encoding=\"" << _config.shakeMapXMLEncoding << "\" standalone=\"yes\"?>" << endl;
+		*os << "<?xml version=\"1.0\" encoding=\"" << _config.shakeMap.output.XMLEncoding << "\" standalone=\"yes\"?>" << endl;
 		*os << "<!DOCTYPE earthquake SYSTEM \"stationlist.dtd\">" << endl;
 		*os << "<stationlist created=\"\" xmlns=\"ch.ethz.sed.shakemap.usgs.xml\">" << endl;
 
 		for ( sit = stationMap.begin(); sit != stationMap.end(); ++sit ) {
 			bool openStationTag = false;
 
-			if ( _config.useMaximumOfHorizontals ) {
+			if ( _config.shakeMap.output.useMaximumOfHorizontals ) {
 				bool foundHorizontals = false;
 				PGAVResult res;
 
@@ -2592,21 +2638,21 @@ void WFParam::collectResults() {
 
 		if ( os == &of ) of.close();
 
-		if ( !_config.shakeMapOutputScript.empty() && writeToFile ) {
+		if ( !_config.shakeMap.output.script.empty() && writeToFile ) {
 			// Call script
 			vector<string> params;
-			params.push_back(_config.shakeMapOutputScript);
+			params.push_back(_config.shakeMap.output.script);
 			params.push_back(_currentProcess && _currentProcess->event?
 			                 _currentProcess->event->publicID():string("-"));
 			params.push_back(eventID.empty()?string("-"):eventID);
 			params.push_back(eventPath);
 			pid_t pid = startExternalProcess(params);
 			if ( pid < 0 )
-				SEISCOMP_ERROR("%s: execution failed", _config.shakeMapOutputScript.c_str());
-			else if ( _config.shakeMapOutputScriptWait ) {
+				SEISCOMP_ERROR("%s: execution failed", _config.shakeMap.output.script.c_str());
+			else if ( _config.shakeMap.output.scriptWait ) {
 				int status;
 				waitpid(pid, &status, 0);
-				SEISCOMP_DEBUG("%s: execution finished", _config.shakeMapOutputScript.c_str());
+				SEISCOMP_DEBUG("%s: execution finished", _config.shakeMap.output.script.c_str());
 			}
 		}
 	}
@@ -2705,15 +2751,50 @@ void WFParam::writeShakeMapComponent(const PGAVResult *res, bool &stationTag,
 
 	os->precision(10);
 	os->setf(ios::fixed,ios::floatfield);
-	*os << "      <acc value=\"" << (res->pga/9.806)*100.0 << "\" flag=\"0\"/>" << endl;
-	*os << "      <vel value=\"" << res->pgv*100.0 << "\" flag=\"0\"/>" << endl;
 
-	if ( res->psa03 >= 0.0 )
-		*os << "      <psa03 value=\"" << (res->psa03/9.806)*100.0 << "\" flag=\"0\"/>" << endl;
-	if ( res->psa10 >= 0.0 )
-		*os << "      <psa10 value=\"" << (res->psa10/9.806)*100.0 << "\" flag=\"0\"/>" << endl;
-	if ( res->psa30 >= 0.0 )
-		*os << "      <psa30 value=\"" << (res->psa30/9.806)*100.0 << "\" flag=\"0\"/>" << endl;
+	if ( _config.shakeMap.output.version < 4 ) {
+		*os << "      <acc value=\"" << (res->pga/9.806)*100.0 << "\" flag=\"0\"/>" << endl;
+		*os << "      <vel value=\"" << res->pgv*100.0 << "\" flag=\"0\"/>" << endl;
+
+		if ( res->psa03 >= 0.0 ) {
+			*os << "      <psa03 value=\"" << (res->psa03/9.806)*100.0 << "\" flag=\"0\"/>" << endl;
+		}
+		if ( res->psa10 >= 0.0 ) {
+			*os << "      <psa10 value=\"" << (res->psa10/9.806)*100.0 << "\" flag=\"0\"/>" << endl;
+		}
+		if ( res->psa30 >= 0.0 ) {
+			*os << "      <psa30 value=\"" << (res->psa30/9.806)*100.0 << "\" flag=\"0\"/>" << endl;
+		}
+	}
+	else {
+		if ( _wantShakeMapPGA ) {
+			*os << "      <acc value=\"" << (res->pga/9.806)*100.0 << "\" flag=\"0\"/>" << endl;
+		}
+		if ( _wantShakeMapPGV ) {
+			*os << "      <vel value=\"" << res->pgv*100.0 << "\" flag=\"0\"/>" << endl;
+		}
+
+		for ( auto period : _wantShakeMapPSAPeriods ) {
+			if ( period.second == 0.3 && res->psa03 >= 0 ) {
+				*os << "      <psa03 value=\"" << (res->psa03/9.806)*100.0 << "\" flag=\"0\"/>" << endl;
+			}
+			else if ( period.second == 1.0 && res->psa10 >= 0.0 ) {
+				*os << "      <psa10 value=\"" << (res->psa10/9.806)*100.0 << "\" flag=\"0\"/>" << endl;
+			}
+			else if ( period.second == 3.0 && res->psa30 >= 0.0 ) {
+				*os << "      <psa30 value=\"" << (res->psa30/9.806)*100.0 << "\" flag=\"0\"/>" << endl;
+			}
+			else if ( res->responseSpectrum ) {
+				// Additional periods
+				for ( auto item : *res->responseSpectrum ) {
+					if ( abs(item.period - period.second) < 1E-6 ) {
+						*os << "      <" << period.first << " value=\"" << (item.psa/9.806)*100.0 << "\" flag=\"0\"/>" << endl;
+						break;
+					}
+				}
+			}
+		}
+	}
 
 	os->flags(tmpf);
 	os->precision(tmpp);
