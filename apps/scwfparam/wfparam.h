@@ -165,13 +165,21 @@ class WFParam : public Application {
 			std::string eventParameterFile;
 
 			bool        enableShortEventID;
-			bool        enableShakeMapXMLOutput;
-			std::string shakeMapOutputScript;
-			std::string shakeMapOutputPath;
-			bool        shakeMapOutputScriptWait;
-			bool        shakeMapOutputSC3EventID;
-			bool        shakeMapOutputRegionName;
-			std::string shakeMapXMLEncoding;
+
+			struct {
+				struct {
+					bool                     enable;
+					std::vector<std::string> pgm;
+					std::string              script;
+					std::string              path;
+					bool                     scriptWait;
+					bool                     SC3EventID;
+					bool                     regionName;
+					std::string              XMLEncoding;
+					bool                     useMaximumOfHorizontals;
+					int                      version;
+				} output;
+			}           shakeMap;
 
 			bool        enableMessagingOutput;
 
@@ -192,7 +200,6 @@ class WFParam : public Application {
 			int         PDorder;
 			FilterFreqs PDfilter;
 
-			bool        useMaximumOfHorizontals;
 			bool        offline;
 			bool        force;
 			bool        forceShakemap;
@@ -209,7 +216,6 @@ class WFParam : public Application {
 			double      magnitudeTolerance;
 			bool        dumpRecords;
 
-			int         shakemapTargetVersion;
 			std::string organization;
 
 			// Cron options
@@ -272,9 +278,10 @@ class WFParam : public Application {
 			bool hasBeenProcessed(DataModel::Stream *) const;
 		};
 
-		typedef std::list<ProcessPtr>                            ProcessQueue;
-		typedef std::map<std::string, ProcessPtr>                Processes;
-		typedef std::set<DataModel::EventPtr>                    Todos;
+		using ProcessQueue = std::list<ProcessPtr>;
+		using Processes    = std::map<std::string, ProcessPtr>;
+		using Todos        = std::set<DataModel::EventPtr>;
+		using PeriodID     = std::pair<std::string, double>;
 
 		std::set<std::string>      _processedEvents;
 
@@ -308,6 +315,9 @@ class WFParam : public Application {
 		FilterFreqs                _filter;
 		int                        _cronCounter;
 		int                        _acquisitionTimeout;
+		bool                       _wantShakeMapPGA;
+		bool                       _wantShakeMapPGV;
+		std::vector<PeriodID>      _wantShakeMapPSAPeriods;
 
 		Util::StopWatch            _acquisitionTimer;
 		Util::StopWatch            _noDataTimer;

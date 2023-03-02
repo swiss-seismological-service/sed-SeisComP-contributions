@@ -70,6 +70,7 @@ struct PGAVResult {
 	std::string      filename;
 
 	Processing::PGAV::ResponseSpectra responseSpectra;
+	const Processing::PGAV::ResponseSpectrum *responseSpectrum;
 };
 
 
