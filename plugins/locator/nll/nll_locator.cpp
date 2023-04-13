@@ -572,7 +572,7 @@ bool NLLocator::init(const Config::Config &config) {
 		_SEDdiffMaxLikeExpectTag = "SED.diffMaxLikeExpect";
 	}
 
-	updateProfile("");
+	_currentProfile = nullptr;
 
 	return result;
 }
@@ -634,7 +634,7 @@ void NLLocator::setProfile(const string &name) {
 		return;
 
 	if ( name == "automatic" )
-		updateProfile("");
+		_currentProfile = nullptr;
 	else
 		updateProfile(name);
 }
@@ -1148,7 +1148,7 @@ Origin* NLLocator::relocate(const Origin *origin) {
 		throw exc;
 	}
 
-	// Only try another profile if the automatic profile is active
+	// Try another profile only if the automatic profile is active
 	if ( org && emptyProfile ) {
 		vector<RegionPtr> blacklist;
 
@@ -1236,9 +1236,8 @@ std::string NLLocator::lastMessage(MessageType type) const {
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 void NLLocator::updateProfile(const std::string &name) {
-	_currentProfile = NULL;
 
-	Profile *prof = NULL;
+	Profile *prof = nullptr;
 	for ( Profiles::iterator it = _profiles.begin();
 	      it != _profiles.end(); ++it ) {
 		if ( it->name != name ) continue;
@@ -1248,6 +1247,8 @@ void NLLocator::updateProfile(const std::string &name) {
 	}
 
 	if ( prof == _currentProfile ) return;
+
+	SEISCOMP_DEBUG("Setting profile %s", name.c_str());
 
 	_currentProfile = prof;
 	_controlFile.clear();
