@@ -427,7 +427,7 @@ bool NLLocator::init(const Config::Config &config) {
 		_controlFilePath = "";
 	}
 
-	_currentProfile = NULL;
+	_currentProfile = nullptr;
 	bool result = true;
 
 	_profileNames.clear();
@@ -478,7 +478,7 @@ bool NLLocator::init(const Config::Config &config) {
 		else if ( regionType == "SIMPLE" )
 			prof.region = new SimpleTransformedRegion;
 
-		if ( prof.region == NULL ) {
+		if ( prof.region == nullptr ) {
 			SEISCOMP_ERROR("NonLinLoc.profile.%s: invalid transformation: %s",
 			               it->c_str(), regionType.c_str());
 			it = _profileNames.erase(it);
@@ -659,7 +659,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 	if ( pickList.empty() )
 		throw LocatorException("Empty observation set");
 
-	if ( _currentProfile == NULL ) {
+	if ( _currentProfile == nullptr ) {
 		throw GeneralException("No profile set");
 	}
 
@@ -703,7 +703,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 		double weight = it->flags & F_TIME?1.0:0.0;
 
 		SensorLocation *sloc = getSensorLocation(pick);
-		if ( sloc == NULL ) {
+		if ( sloc == nullptr ) {
 			if ( _allowMissingStations ) {
 				// Append a new line to the warning message
 				if ( !_lastWarning.empty() )
@@ -817,7 +817,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 
 			if ( toks.size() < 10 ) {
 				delete origin;
-				origin = NULL;
+				origin = nullptr;
 				throw GeneralException((string("Unable to fix depth: invalid LOCGRID line in ") +
 				                        _currentProfile->controlFile).c_str());
 			}
@@ -838,7 +838,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 
 		if ( !foundLocGrid ) {
 			delete origin;
-			origin = NULL;
+			origin = nullptr;
 			throw GeneralException((string("Unable to fix depth: LOCGRID line not found in ") +
 			                        _currentProfile->controlFile).c_str());
 		}
@@ -867,9 +867,9 @@ Origin* NLLocator::locate(PickList &pickList) {
 	int return_locations = 1;
 	int return_oct_tree_grid = 1;
 	int return_scatter_sample = 1;
-	LocNode *loc_list_head = NULL;
+	LocNode *loc_list_head = nullptr;
 
-	int istat = NLLoc(NULL, NULL,
+	int istat = NLLoc(nullptr, nullptr,
 	                  &control_buf[0], (int)control_buf.size(),
 	                  &obs_buf[0], (int)obs_buf.size(), return_locations,
 	                  return_oct_tree_grid, return_scatter_sample, &loc_list_head);
@@ -880,7 +880,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 	LocNode *locNode = getLocationFromLocList(loc_list_head, id);
 	bool validOrigin = false;
 
-	for ( ; locNode != NULL; locNode = getLocationFromLocList(loc_list_head, ++id) ) {
+	for ( ; locNode != nullptr; locNode = getLocationFromLocList(loc_list_head, ++id) ) {
 		SEISCOMP_DEBUG("Processing node");
 
 		validOrigin = NLL2SC3(origin, _lastWarning, locNode, usedPicks, _usingFixedDepth);
@@ -900,7 +900,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 					Pick *pick = it->pick.get();
 
 					SensorLocation *sloc = getSensorLocation(pick);
-					if ( sloc == NULL ) continue;
+					if ( sloc == nullptr ) continue;
 					double dist, az, baz;
 
 					// Compute distance from origin to station
@@ -921,9 +921,9 @@ Origin* NLLocator::locate(PickList &pickList) {
 				freeLocList(loc_list_head, 1);
 
 				// call NLL again
-				loc_list_head = NULL;
+				loc_list_head = nullptr;
 				id = 0;
-				istat = NLLoc(NULL, NULL,
+				istat = NLLoc(nullptr, nullptr,
 				              &control_buf[0], (int)control_buf.size(),
 				              &obs_buf[0], (int)obs_buf.size(), return_locations,
 				              return_oct_tree_grid, return_scatter_sample, &loc_list_head);
@@ -937,13 +937,13 @@ Origin* NLLocator::locate(PickList &pickList) {
 					// Create a new origin with the same publicID
 					std::string publicID = origin->publicID();
 					delete origin;
-					origin = NULL;
+					origin = nullptr;
 					origin = Origin::Create(publicID);
 					validOrigin = NLL2SC3(origin, _lastWarning, locNode, usedPicks, _usingFixedDepth);
 				}
 				else {
 					delete origin;
-					origin = NULL;
+					origin = nullptr;
 					freeLocList(loc_list_head, 1);
 					throw LocatorException("Distance cut-off failed: empty location");
 				}
@@ -957,13 +957,13 @@ Origin* NLLocator::locate(PickList &pickList) {
 
 			if ( _enableNLLOutput ) {
 				// write NLLoc Hypocenter-Phase file to disk
-				if ( WriteLocation(NULL, locNode->plocation->phypo, locNode->plocation->parrivals,
+				if ( WriteLocation(nullptr, locNode->plocation->phypo, locNode->plocation->parrivals,
 				                   locNode->plocation->narrivals, const_cast<char*>((outputPath + ".loc.hyp").c_str()),
 				                   1, 1, 0, locNode->plocation->pgrid, 0) < 0 )
 					SEISCOMP_ERROR("Failed writing location to event file: %s", (outputPath + ".loc.hyp").c_str());
 
 				// write NLLoc location Grid Header file to disk
-				if ( WriteGrid3dHdr(locNode->plocation->pgrid, NULL,
+				if ( WriteGrid3dHdr(locNode->plocation->pgrid, nullptr,
 				                    const_cast<char*>(outputPath.c_str()),
 				                    const_cast<char*>("loc")) < 0 )
 					SEISCOMP_ERROR("Failed writing grid header to disk: %s", outputPath.c_str());
@@ -971,7 +971,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 				// write NLLoc location Oct tree structure of locaiton likelihood values to disk
 				if ( return_oct_tree_grid ) {
 					FILE *fpio = fopen((outputPath + ".loc.octree").c_str(), "w");
-					if ( fpio != NULL ) {
+					if ( fpio != nullptr ) {
 						istat = writeTree3D(fpio, locNode->plocation->poctTree);
 						fclose(fpio);
 						SEISCOMP_INFO("Oct tree structure written to file: %d nodes", istat);
@@ -983,7 +983,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 				// write NLLoc binary Scatter file to disk
 				if ( return_scatter_sample ) {
 					FILE *fpio = fopen((outputPath + ".loc.scat").c_str(), "w");
-					if ( fpio != NULL ) {
+					if ( fpio != nullptr ) {
 						// write scatter file header informaion
 						fseek(fpio, 0, SEEK_SET);
 						fwrite(&(locNode->plocation->phypo->nScatterSaved), sizeof(int), 1, fpio);
@@ -1024,10 +1024,10 @@ Origin* NLLocator::locate(PickList &pickList) {
 
 	if ( !validOrigin ) {
 		delete origin;
-		origin = NULL;
+		origin = nullptr;
 	}
 
-	if ( locNode == NULL )
+	if ( locNode == nullptr )
 		throw LocatorException("Empty location");
 
 	return origin;
@@ -1052,7 +1052,7 @@ Origin* NLLocator::locate(PickList &pickList,
 Origin* NLLocator::relocate(const Origin *origin) {
 	_lastWarning = "";
 
-	if ( origin == NULL ) return NULL;
+	if ( origin == nullptr ) return nullptr;
 
 	double lat = origin->latitude().value();
 	double lon = origin->longitude().value();
@@ -1060,7 +1060,7 @@ Origin* NLLocator::relocate(const Origin *origin) {
 
 	SEISCOMP_DEBUG("Relocating origin with publicID: %s", origin->publicID().c_str());
 
-	if ( _currentProfile == NULL ) {
+	if ( _currentProfile == nullptr ) {
 		// Find best earth model based on region information and
 		// the initial origin
 		emptyProfile = true;
@@ -1074,10 +1074,10 @@ Origin* NLLocator::relocate(const Origin *origin) {
 		}
 
 		SEISCOMP_DEBUG("matching earth model: %s",
-		               _currentProfile == NULL?"none":_currentProfile->earthModelID.c_str());
+		               _currentProfile == nullptr?"none":_currentProfile->earthModelID.c_str());
 	}
 
-	if ( _currentProfile == NULL ) {
+	if ( _currentProfile == nullptr ) {
 		throw LocatorException(
 			string("No matching earth model found "
 			       "for location (lat: ") + Core::toString(lat) +
@@ -1104,7 +1104,7 @@ Origin* NLLocator::relocate(const Origin *origin) {
 		catch ( ... ) {}
 
 		PickPtr pick = getPick(origin->arrival(i));
-		if ( pick != NULL ) {
+		if ( pick != nullptr ) {
 			try {
 				// Phase definition of arrival and pick different?
 				if ( pick->phaseHint().code() != origin->arrival(i)->phase().code() ) {
@@ -1124,7 +1124,7 @@ Origin* NLLocator::relocate(const Origin *origin) {
 
 		}
 		else {
-			if ( emptyProfile ) _currentProfile = NULL;
+			if ( emptyProfile ) _currentProfile = nullptr;
 
 			throw PickNotFoundException(
 				"pick '" + origin->arrival(i)->pickID() + "' not found"
@@ -1144,7 +1144,7 @@ Origin* NLLocator::relocate(const Origin *origin) {
 		org = locate(picks);
 	}
 	catch ( GeneralException &exc ) {
-		if ( emptyProfile ) _currentProfile = NULL;
+		if ( emptyProfile ) _currentProfile = nullptr;
 		throw exc;
 	}
 
@@ -1168,7 +1168,7 @@ Origin* NLLocator::relocate(const Origin *origin) {
 			// Otherwise find a less restrictive profile based on the
 			// input region
 			blacklist.push_back(_currentProfile->region);
-			_currentProfile = NULL;
+			_currentProfile = nullptr;
 
 			for ( Profiles::iterator it = _profiles.begin();
 			      it != _profiles.end(); ++it ) {
@@ -1191,17 +1191,17 @@ Origin* NLLocator::relocate(const Origin *origin) {
 				}
 				catch ( GeneralException &exc ) {
 					delete lastWorkingOrg;
-					lastWorkingOrg = NULL;
-					_currentProfile = NULL;
+					lastWorkingOrg = nullptr;
+					_currentProfile = nullptr;
 					throw exc;
 				}
 
-				if ( org == NULL )
+				if ( org == nullptr )
 					org = lastWorkingOrg;
 				else {
 					// New origin available => delete the old one
 					delete lastWorkingOrg;
-					lastWorkingOrg = NULL;
+					lastWorkingOrg = nullptr;
 				}
 			}
 			else {
@@ -1212,7 +1212,7 @@ Origin* NLLocator::relocate(const Origin *origin) {
 			}
 		}
 
-		_currentProfile = NULL;
+		_currentProfile = nullptr;
 	}
 
 	return org;
@@ -1382,7 +1382,7 @@ bool NLLocator::NLL2SC3(Origin *origin, string &locComment, const void *vnode,
 
 		// Skip unknown station
 		SensorLocation *sloc = getSensorLocation(pick.get());
-		if ( sloc == NULL ) continue;
+		if ( sloc == nullptr ) continue;
 
 		// Compute distance and azimuth
 		double dist, az, baz;
