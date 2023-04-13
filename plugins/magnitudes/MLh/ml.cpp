@@ -541,11 +541,12 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 
 		list<param_struct> list_of_parametersets;
 		param_struct selected_parameterset;
+		double maxDepth;
 
 
 	public:
 		MagnitudeProcessor_ML()
-		: Processing::MagnitudeProcessor(MAG_TYPE) {}
+		: Processing::MagnitudeProcessor(MAG_TYPE), maxDepth(DEPTH_MAX) {}
 
 
 		bool setup(const Processing::Settings &settings) {
@@ -570,6 +571,17 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 					                 "The old parameter MLh.params has been deprecated and should be replaced");
 				}
 				catch ( ... ) {}
+			}
+
+			try {
+				maxDepth = settings.getDouble("magnitudes.MLh.maxDepth");
+			}
+			catch ( ... ) { }
+
+			if (maxDepth > DEPTH_MAX) {
+				SEISCOMP_WARNING("maxDepth (%g) is greater than the recommended maximum value of %g km. "
+				                 "If you know what you are doing you can disregard this warning",
+				               maxDepth, DEPTH_MAX);
 			}
 
 			return true;
@@ -598,7 +610,7 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 			if ( delta < DELTA_MIN || delta > DELTA_MAX )
 				return DistanceOutOfRange;
 
-			if ( depth > DEPTH_MAX )
+			if ( depth > maxDepth )
 				return DepthOutOfRange;
 
 			if ( !convertAmplitude(amplitude, unit, ExpectedAmplitudeUnit) )

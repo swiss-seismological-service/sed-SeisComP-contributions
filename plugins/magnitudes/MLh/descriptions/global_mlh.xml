@@ -43,6 +43,13 @@
 						Note: No MLh computation if params is empty.
 						</description>
 					</parameter>
+					<parameter name="maxDepth" type="double" unit="km" default="80" >
+						<description>
+							Maximum depth allowed to compute the magnitude. Make sure to
+							also update the MLh amplitude bindings accordingly to this
+							value. maxDepth should not be greater than 80km. 
+						</description>
+					</parameter>
 				</group>
 			</group>
 		</configuration>
