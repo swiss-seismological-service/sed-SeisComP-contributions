@@ -160,6 +160,7 @@
 					</description>
 				</parameter>
 				<parameter name="magnitudeFilterTable" type="list:string" default="0:0.2;0.8fNyquist,3:0.1;0.8fNyquist,5:0.05;0.8fNyquist,7:0.025;0.8fNyquist">
+					<description>
 					Magnitude dependent filter table. The format is
 					&quot;mag1:fmin1;fmax1, mag2:fmin2;fmax2, mag3:fmin3;fmax3&quot;.
 					If a magnitude falls between two configured magnitudes the filter of
@@ -169,6 +170,7 @@
 					Frequency values are given as simple positive doubles (Hz is assumed)
 					or with suffix &quot;fNyquist&quot; which is then multiplied by the
 					Nyquist frequency of the data to get the final corner frequency.
+					</description>
 				</parameter>
 				<group name="filter">
 					<description>
