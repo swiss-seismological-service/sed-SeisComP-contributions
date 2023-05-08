@@ -488,11 +488,13 @@ class Reloc : public Client::Application {
 			double seconds = (double) timer.elapsed() / _repeatedRelocationCount;
 
 			if ( newOrg ) {
-				if ( _originEvaluationMode == "AUTOMATIC" )
+				if ( _originEvaluationMode == "AUTOMATIC" ) {
 					newOrg->setEvaluationMode(EvaluationMode(AUTOMATIC));
-				else
+				}
+				else {
 					newOrg->setEvaluationMode(EvaluationMode(MANUAL));
 					SEISCOMP_DEBUG("  + set evaluation mode: 'manual'");
+				}
 
 				CreationInfo *ci;
 
