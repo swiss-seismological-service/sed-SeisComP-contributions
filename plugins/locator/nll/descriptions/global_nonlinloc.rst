@@ -118,6 +118,24 @@ In addition to the native NLL output a SeisComP origin object is created and
 returned to the calling instance. Usually this object is then sent via messaging.
 
 
+Profiles
+========
+
+The plugin allows to specify multiple configuration profiles (:confval:`NonLinLoc.profiles`).
+The profile to use can selected both in `scolv` and `screloc`, however a 
+virtual profile automatic is also provided, which selects the best matching 
+configured profile based on the initial location. For this reason each profile 
+contains some configuration parameters that defines where the profile is valid 
+(`transform`, `region`, `origin`, `rotation`). The `transform` profile 
+configuration parameter supports only `GLOBAL` or `SIMPLE` at the moment: only the
+profile has this limitation, not the NonLinLoc control file, which supports 
+all transformations available in NonLinLoc.
+
+**NOTE**: If a profile `transform` is set as `GLOBAL` and the `region` parameter is
+left `empty`, then the plugin adds the line `TRANS GLOBAL` to the control file,
+forcing a global transformation.
+
+
 Configuration example
 =====================
 
@@ -278,7 +296,10 @@ Settings
 
 The NLL locator implementation supports to override configured settings or
 control parameters for a session. Those changes are not persistent and lost if
-the locator is changed to another one or the profile has been changed.
+the locator is changed to another one or the profile has been changed.  However
+this feature is particularly useful when trying differnt settings on a particular
+origin or for enabling the NonLinLoc logs (`CONTROL` statement) that becomes
+visible on the console.
 
 To open the settings dialog press the button right to the locator selection
 combo box.
