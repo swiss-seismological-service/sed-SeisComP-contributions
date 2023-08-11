@@ -221,7 +221,7 @@ class Reloc : public Client::Application {
 				}
 
 				int numberOfOrigins = (int)ep->originCount();
-				SEISCOMP_DEBUG("  + found %i origins", numberOfOrigins);
+				SEISCOMP_INFO("  + found %i origins", numberOfOrigins);
 				bool replace = commandline().hasOption("replace");
 
 				if ( !_originIDs.empty() ) {
@@ -237,7 +237,8 @@ class Reloc : public Client::Application {
 					}
 				}
 
-				for ( int i = 0; i < numberOfOrigins; ++i ) {
+				int processed = 0;
+				for ( int i = 0; i < numberOfOrigins; ++i, ++processed ) {
 					OriginPtr org = ep->origin(i);
 					std::string publicID = org->publicID();
 					SEISCOMP_DEBUG("Processing origin %s", publicID.c_str());
@@ -270,7 +271,6 @@ class Reloc : public Client::Application {
 					SEISCOMP_DEBUG("  + relocated origin has publicID: %s ",
 					                org->publicID().c_str());
 
-
 					if ( org ) {
 						if ( replace ) {
 							ep->removeOrigin(i);
@@ -280,7 +280,12 @@ class Reloc : public Client::Application {
 
 						ep->add(org.get());
 					}
+
+					if (((processed+1) % 100) == 0 ) {
+						SEISCOMP_INFO("  + processed %d origins", processed+1);
+					}
 				}
+ 				SEISCOMP_INFO("  + processed %d origins", processed);
 
 				ar.create("-");
 				ar.setFormattedOutput(true);
