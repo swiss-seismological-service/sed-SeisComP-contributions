@@ -146,7 +146,7 @@ class AmplitudeProcessor_MLh : public Processing::AbstractAmplitudeProcessor_ML 
 	private:
 		// Discard clipped signals
 		// TODO: test and improve this!
-		void fill(size_t n, double *samples) {
+		void fill(size_t n, double *samples) override {
 			SEISCOMP_DEBUG("AmplitudeProcessor_MLh:fill() was used with limit %f!",ClippingThreshold);
 			for ( size_t i = 0; i < n; ++i ) {
 				if ( abs(samples[i]) > ClippingThreshold ) {
@@ -202,13 +202,13 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 		}
 
 		// Method to describe the capabilities for manual analysis
-		int capabilities() const {
+		int capabilities() const override {
 			return _ampN.capabilities() | Combiner;
 		}
 
 		// Returns a value list for a given capability.
 		AmplitudeProcessor::IDList
-		capabilityParameters(Capability cap) const {
+		capabilityParameters(Capability cap) const override {
 			if ( cap == Combiner ) {
 				IDList params;
 				params.push_back("Max");
@@ -221,7 +221,7 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 		}
 
 		// Sets the value for a given capability
-		bool setParameter(Capability cap, const string &value) {
+		bool setParameter(Capability cap, const string &value) override {
 			if ( cap == Combiner ) {
 				if ( value == "Min" ) {
 					_combiner = Minimum;
@@ -246,7 +246,7 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 
 		// Method called by the application to setup the processor.
 		// StreamConfigs are expected to be setup already.
-		bool setup(const Processing::Settings &settings) {
+		bool setup(const Processing::Settings &settings) override {
 			// Copy the stream configurations (gain, orientation, responses, ...) to
 			// the horizontal processors
 			_ampN.streamConfig(FirstHorizontalComponent) = streamConfig(FirstHorizontalComponent);
@@ -311,7 +311,7 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 
 		// Returns the component processor for a given component. This
 		// method is only used for interactive analysis.
-		const AmplitudeProcessor *componentProcessor(Component comp) const {
+		const AmplitudeProcessor *componentProcessor(Component comp) const override {
 			switch ( comp ) {
 			case FirstHorizontalComponent:
 				return &_ampN;
@@ -326,7 +326,7 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 
 		// Returns the processed data array for a given component. This
 		// method is only used for interactive analysis.
-		const DoubleArray *processedData(Component comp) const {
+		const DoubleArray *processedData(Component comp) const override {
 			switch ( comp ) {
 			case FirstHorizontalComponent:
 				return _ampN.processedData(comp);
@@ -340,7 +340,7 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 		}
 
 
-		void setTrigger(const Core::Time &trigger) {
+		void setTrigger(const Core::Time &trigger) override {
 			// Set the trigger in 'this' as well to be able to query it
 			// correctly from outside.
 			AmplitudeProcessor::setTrigger(trigger);
@@ -348,17 +348,30 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 			_ampN.setTrigger(trigger);
 		}
 
-		void computeTimeWindow() {
+		void setEnvironment(const DataModel::Origin *hypocenter,
+		                    const DataModel::SensorLocation *receiver,
+		                    const DataModel::Pick *pick) override {
+			_ampE.setEnvironment(hypocenter, receiver, pick);
+			_ampN.setEnvironment(hypocenter, receiver, pick);
+		}
+
+		void computeTimeWindow() override {
 			// Copy configuration to each component
 			_ampN.setConfig(config());
 			_ampE.setConfig(config());
 
 			_ampE.computeTimeWindow();
 			_ampN.computeTimeWindow();
+
+			// computeTimeWindow evaluates the signal times. This copies back the
+			// evaluated times.
+			setConfig(_ampE.config());
+
 			setTimeWindow(_ampE.timeWindow() | _ampN.timeWindow());
 		}
 
-		double timeWindowLength(double distance_deg) const {
+#if SC_API_VERSION < SC_API_VERSION_CHECK(16, 0, 0)
+		double timeWindowLength(double distance_deg) const override {
 			double endN = _ampN.timeWindowLength(distance_deg);
 			double endE = _ampE.timeWindowLength(distance_deg);
 			_ampN.setSignalEnd(endN);
@@ -366,7 +379,8 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 			return std::max(endN, endE);
 		}
 
-		void reset() {
+#endif
+		void reset() override {
 			AmplitudeProcessor::reset();
 
 			_results[0] = _results[1] = Core::None;
@@ -379,7 +393,7 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 			// TODO: Check for best available amplitude here
 		}
 
-		bool feed(const Record *record) {
+		bool feed(const Record *record) override {
 			// Both processors finished already?
 			if ( _ampE.isFinished() && _ampN.isFinished() ) return false;
 
@@ -427,11 +441,11 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 		                      double offset,
 		                      AmplitudeIndex *dt,
 		                      AmplitudeValue *amplitude,
-		                      double *period, double *snr) {
+		                      double *period, double *snr) override {
 			return false;
 		}
 
-		void reprocess(OPT(double) searchBegin, OPT(double) searchEnd) {
+		void reprocess(OPT(double) searchBegin, OPT(double) searchEnd) override {
 			setStatus(WaitingForData, 0);
 			_ampN.setConfig(config());
 			_ampE.setConfig(config());
@@ -549,7 +563,7 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 		: Processing::MagnitudeProcessor(MAG_TYPE), maxDepth(DEPTH_MAX) {}
 
 
-		bool setup(const Processing::Settings &settings) {
+		bool setup(const Processing::Settings &settings) override {
 			list_of_parametersets.clear();
 
 			try {
@@ -588,7 +602,7 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 		}
 
 
-		string amplitudeType() const {
+		string amplitudeType() const override {
 			return MAG_TYPE;
 		}
 
@@ -606,7 +620,7 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 #if SC_API_VERSION >= SC_API_VERSION_CHECK(15,0,0)
 			const Locale *,
 #endif
-			double &value) {
+			double &value) override {
 			if ( delta < DELTA_MIN || delta > DELTA_MAX )
 				return DistanceOutOfRange;
 
