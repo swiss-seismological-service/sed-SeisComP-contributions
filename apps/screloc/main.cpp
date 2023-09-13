@@ -68,7 +68,7 @@ class Reloc : public Client::Application {
 
 
 	protected:
-		void createCommandLineDescription() {
+		void createCommandLineDescription() override {
 			commandline().addGroup("Mode");
 			commandline().addOption("Mode", "test", "test mode, do not send any message");
 			commandline().addOption("Mode", "dump", "dump processed origins as XML to stdout");
@@ -92,14 +92,16 @@ class Reloc : public Client::Application {
 
 		bool initConfiguration() {
 			// first call the application's configuration routine
-			if ( !Client::Application::initConfiguration() )
+			if ( !Client::Application::initConfiguration() ) {
 				return false;
+			}
 
 			_ignoreRejected = false;
 			_allowPreliminary = false;
 
-			if (_repeatedRelocationCount < 1)
+			if (_repeatedRelocationCount < 1) {
 				_repeatedRelocationCount = 1;
+			}
 
 			try { _locatorType = configGetString("reloc.locator"); }
 			catch ( ... ) {}
@@ -136,19 +138,30 @@ class Reloc : public Client::Application {
 			try { _storeSourceOriginID = configGetBool("reloc.storeSourceOriginID"); }
 			catch ( ... ) {}
 
-			if ( !_epFile.empty() )
-				setMessagingEnabled(false);
-
-			if ( !isInventoryDatabaseEnabled() )
-				setDatabaseEnabled(false, false);
-
 			return true;
 		}
 
 
-		bool init() {
-			if ( !Client::Application::init() )
+		bool validateParameters() {
+			if ( !Client::Application::validateParameters() ) {
 				return false;
+			}
+
+			if ( !_epFile.empty() ) {
+				setMessagingEnabled(false);
+			}
+
+			if ( !isInventoryDatabaseEnabled() ) {
+				setDatabaseEnabled(false, false);
+			}
+
+			return true;
+		}
+
+		bool init() {
+			if ( !Client::Application::init() ) {
+				return false;
+			}
 
 			_locator = LocatorInterfaceFactory::Create(_locatorType.c_str());
 			if ( !_locator ) {
