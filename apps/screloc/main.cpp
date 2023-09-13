@@ -214,8 +214,8 @@ class Reloc : public Client::Application {
 		bool run() {
 			if ( !_epFile.empty() ) {
 				// Disable database
-				setDatabase(NULL);
-
+				setDatabase(nullptr);
+				_cache.setDatabaseArchive(nullptr);
 
 				SEISCOMP_INFO("Processing file %s", _epFile.c_str());
 				IO::XMLArchive ar;
