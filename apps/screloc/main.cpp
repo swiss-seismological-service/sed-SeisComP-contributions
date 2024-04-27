@@ -281,6 +281,15 @@ class Reloc : public Client::Application {
 						SEISCOMP_ERROR("  + processing failed");
 						continue;
 					}
+					else if ( _ignoreRejected ) {
+						try {
+							if ( org->evaluationStatus() == REJECTED ) {
+								SEISCOMP_DEBUG("  + Origin status is REJECTED, drop origin");
+								continue;
+							}
+						}
+						catch ( ... ) {}
+					}
 					if ( !_originIDSuffix.empty()) {
 						org->setPublicID(publicID+_originIDSuffix);
 						SEISCOMP_DEBUG("  + new origin publicID is derived from original");
