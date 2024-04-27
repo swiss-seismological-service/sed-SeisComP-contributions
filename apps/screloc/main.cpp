@@ -81,6 +81,8 @@ class Reloc : public Client::Application {
 			                                       "This option should not be mixed with --dump.", &_epFile);
 			commandline().addOption("Input", "replace", "Used in combination with --ep and defines if origins are to be replaced "
 			                                            "by their relocated counterparts or just added to the output.");
+			commandline().addOption("Input", "drop-failure", "Used in combination with --replace/--ep and drops from the output "
+			                                            "the origins for which the relocation failed.");
 			commandline().addGroup("Output");
 			commandline().addOption("Output", "origin-id-suffix", "create origin ID from that of the input origin plus the specfied suffix", &_originIDSuffix);
 			commandline().addOption("Output", "evaluation-mode", "evaluation mode of the new origin (AUTOMATIC or MANUAL)", &_originEvaluationMode, true);
@@ -236,6 +238,7 @@ class Reloc : public Client::Application {
 				int numberOfOrigins = (int)ep->originCount();
 				SEISCOMP_INFO("  + found %i origins", numberOfOrigins);
 				bool replace = commandline().hasOption("replace");
+				bool dropfailure = commandline().hasOption("drop-failure");
 
 				if ( !_originIDs.empty() ) {
 					// test if requested origin was loaded
@@ -270,38 +273,46 @@ class Reloc : public Client::Application {
 						}
 					}
 
+					bool relocated;
 					try {
 						org = process(org.get());
+						relocated = true;
 					}
 					catch ( std::exception &e ) {
 						SEISCOMP_ERROR("  + processing failed - %s", e.what());
-						continue;
+						relocated = false;
 					}
 					if ( !org ) { // safety belt, but it should not happen
-						SEISCOMP_ERROR("  + processing failed");
-						continue;
+						SEISCOMP_ERROR("  + processing failed %s", publicID.c_str());
+						relocated = false;
 					}
 					else if ( _ignoreRejected ) {
 						try {
 							if ( org->evaluationStatus() == REJECTED ) {
-								SEISCOMP_DEBUG("  + Origin status is REJECTED, drop origin");
-								continue;
+								SEISCOMP_DEBUG("  + Origin status is REJECTED, drop relocation "
+								               "of origin %s", publicID.c_str());
+								relocated = false;
 							}
 						}
 						catch ( ... ) {}
 					}
+
+					if ( replace && (relocated || dropfailure) ) {
+						ep->removeOrigin(i);
+						--i;
+						--numberOfOrigins;
+					}
+
+					if ( ! relocated ) {
+						continue;
+					}
+
 					if ( !_originIDSuffix.empty()) {
 						org->setPublicID(publicID+_originIDSuffix);
 						SEISCOMP_DEBUG("  + new origin publicID is derived from original");
 					}
 					SEISCOMP_DEBUG("  + relocated origin has publicID: %s ",
 					                org->publicID().c_str());
-
-					if ( replace ) {
-						ep->removeOrigin(i);
-						--i;
-						--numberOfOrigins;
-					}
 
 					ep->add(org.get());
 
