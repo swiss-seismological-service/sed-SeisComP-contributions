@@ -277,6 +277,10 @@ class Reloc : public Client::Application {
 						SEISCOMP_ERROR("  + processing failed - %s", e.what());
 						continue;
 					}
+					if ( !org ) { // safety belt, but it should not happen
+						SEISCOMP_ERROR("  + processing failed");
+						continue;
+					}
 					if ( !_originIDSuffix.empty()) {
 						org->setPublicID(publicID+_originIDSuffix);
 						SEISCOMP_DEBUG("  + new origin publicID is derived from original");
@@ -284,15 +288,13 @@ class Reloc : public Client::Application {
 					SEISCOMP_DEBUG("  + relocated origin has publicID: %s ",
 					                org->publicID().c_str());
 
-					if ( org ) {
-						if ( replace ) {
-							ep->removeOrigin(i);
-							--i;
-							--numberOfOrigins;
-						}
-
-						ep->add(org.get());
+					if ( replace ) {
+						ep->removeOrigin(i);
+						--i;
+						--numberOfOrigins;
 					}
+
+					ep->add(org.get());
 
 					if (((processed+1) % 100) == 0 ) {
 						SEISCOMP_INFO("  + processed %d origins", processed+1);
