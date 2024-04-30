@@ -253,7 +253,7 @@ class Reloc : public Client::Application {
 					}
 				}
 
-				int processed = 0;
+				int processed = 0, numRelocated = 0;
 				for ( int i = 0; i < numberOfOrigins; ++i, ++processed ) {
 					OriginPtr org = ep->origin(i);
 					std::string publicID = org->publicID();
@@ -315,12 +315,14 @@ class Reloc : public Client::Application {
 					                org->publicID().c_str());
 
 					ep->add(org.get());
+					numRelocated++;
 
 					if (((processed+1) % 100) == 0 ) {
 						SEISCOMP_INFO("  + processed %d origins", processed+1);
 					}
 				}
- 				SEISCOMP_INFO("  + processed %d origins", processed);
+ 				SEISCOMP_INFO("  + processed %d origins, successfully relocated %d",
+				              processed, numRelocated);
 
 				ar.create("-");
 				ar.setFormattedOutput(true);
