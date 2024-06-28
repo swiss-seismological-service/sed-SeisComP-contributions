@@ -247,6 +247,10 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 		// Method called by the application to setup the processor.
 		// StreamConfigs are expected to be setup already.
 		bool setup(const Processing::Settings &settings) override {
+			// Propagate amplitude type which could have been changed due to
+			// aliasing.
+			_ampN._type = _type; _ampE._type = _type;
+
 			// Copy the stream configurations (gain, orientation, responses, ...) to
 			// the horizontal processors
 			_ampN.streamConfig(FirstHorizontalComponent) = streamConfig(FirstHorizontalComponent);
