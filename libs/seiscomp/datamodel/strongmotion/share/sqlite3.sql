@@ -1,11 +1,11 @@
-DROP TABLE FilterParameter;
-DROP TABLE SimpleFilter;
-DROP TABLE SimpleFilterChainMember;
-DROP TABLE PeakMotion;
-DROP TABLE Record;
-DROP TABLE EventRecordReference;
-DROP TABLE Rupture;
-DROP TABLE StrongOriginDescription;
+DROP TABLE IF EXISTS FilterParameter;
+DROP TABLE IF EXISTS SimpleFilter;
+DROP TABLE IF EXISTS SimpleFilterChainMember;
+DROP TABLE IF EXISTS PeakMotion;
+DROP TABLE IF EXISTS Record;
+DROP TABLE IF EXISTS EventRecordReference;
+DROP TABLE IF EXISTS Rupture;
+DROP TABLE IF EXISTS StrongOriginDescription;
 
 INSERT INTO Object(_oid) VALUES (NULL);
 INSERT INTO PublicObject(_oid,publicID) VALUES ((SELECT MAX(_oid) FROM Object),'StrongMotionParameters');
