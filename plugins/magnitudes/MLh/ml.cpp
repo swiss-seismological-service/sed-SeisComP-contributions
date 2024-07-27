@@ -599,7 +599,7 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 			if (maxDepth > DEPTH_MAX) {
 				SEISCOMP_WARNING("maxDepth (%g) is greater than the recommended maximum value of %g km. "
 				                 "If you know what you are doing you can disregard this warning",
-				               maxDepth, DEPTH_MAX);
+				               maxDepth, double(DEPTH_MAX));
 			}
 
 			return true;
