@@ -19,15 +19,26 @@
 					Ignores origins with status REJECTED.
 					</description>
 				</parameter>
+				<parameter name="allowAnyStatus" type="boolean" default="false">
+					<description>
+					Triggers processing on origins with any evaluation status.
+					Overrides &quot;allowPreliminaryOrigins&quot; but not
+					&quot;ignoreRejectedOrigins&quot;.
+					</description>
+				</parameter>
 				<parameter name="allowPreliminaryOrigins" type="boolean" default="false">
 					<description>
 					Triggers processing also on origins with status PRELIMINARY.
+					Origins with any other status is ignored anyway. The parameter
+					is overridden by &quot;allowAnyStatus&quot;.
 					</description>
 				</parameter>
 				<parameter name="allowManualOrigins" type="boolean" default="false">
 					<description>
-					Triggers processing also on origins with mode MANUAL. Otherwise
-					only origins with mode AUTOMATIC are considered.
+					Triggers processing also on origins with evaluatuion mode
+					MANUAL. Otherwise only origins with mode AUTOMATIC are
+					considered. The triggering may be limited due to an evaluation
+					status, see &quot;allowPreliminaryOrigins&quot;.
 					</description>
 				</parameter>
 				<parameter name="useWeight" type="boolean" default="false">

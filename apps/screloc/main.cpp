@@ -92,14 +92,11 @@ class Reloc : public Client::Application {
 		}
 
 
-		bool initConfiguration() {
+		bool initConfiguration() override {
 			// first call the application's configuration routine
 			if ( !Client::Application::initConfiguration() ) {
 				return false;
 			}
-
-			_ignoreRejected = false;
-			_allowPreliminary = false;
 
 			if (_repeatedRelocationCount < 1) {
 				_repeatedRelocationCount = 1;
@@ -117,14 +114,14 @@ class Reloc : public Client::Application {
 			try { _allowPreliminary = configGetBool("reloc.allowPreliminaryOrigins"); }
 			catch ( ... ) {}
 
+			try { _allowAnyStatus = configGetBool("reloc.allowAnyStatus"); }
+			catch ( ... ) {}
+
 			try { _allowManual = configGetBool("reloc.allowManualOrigins"); }
 			catch ( ... ) {
 				if ( !_originIDs.empty() || !_epFile.empty()) {
 					_allowManual = true;
 					std::cerr << "OriginID or XML file provided: activating option reloc.allowManualOrigins" << endl;
-				}
-				else {
-					_allowManual = false;
 				}
 			}
 
@@ -144,7 +141,7 @@ class Reloc : public Client::Application {
 		}
 
 
-		bool validateParameters() {
+		bool validateParameters() override {
 			if ( !Client::Application::validateParameters() ) {
 				return false;
 			}
@@ -157,10 +154,14 @@ class Reloc : public Client::Application {
 				setDatabaseEnabled(false, false);
 			}
 
+			if ( _allowAnyStatus ) {
+				_allowPreliminary = true;
+			}
+
 			return true;
 		}
 
-		bool init() {
+		bool init() override {
 			if ( !Client::Application::init() ) {
 				return false;
 			}
@@ -193,6 +194,7 @@ class Reloc : public Client::Application {
 			SEISCOMP_DEBUG("Running with configuration:");
 			SEISCOMP_DEBUG("  + Locator / profile: %s / %s", _locatorType.c_str(), _locatorProfile.c_str());
 			SEISCOMP_DEBUG("  + ignoreRejectOrigins: %s", _ignoreRejected?"True":"False");
+			SEISCOMP_DEBUG("  + allowAnyStatus: %s", _allowAnyStatus?"True":"False");
 			SEISCOMP_DEBUG("  + allowPreliminaryOrigins: %s", _allowPreliminary?"True":"False");
 			SEISCOMP_DEBUG("  + allowManualOrigins: %s", _allowManual?"True":"False");
 			SEISCOMP_DEBUG("  + useWeight: %s", _useWeight?"True":"False");
@@ -213,7 +215,7 @@ class Reloc : public Client::Application {
 		}
 
 
-		bool run() {
+		bool run() override {
 			if ( !_epFile.empty() ) {
 				// Disable database
 				setDatabase(nullptr);
@@ -431,14 +433,16 @@ class Reloc : public Client::Application {
 
 				// Skip confirmed or otherwise tagged solutions unless
 				// preliminary origins are allowed
-				try {
-					EvaluationStatus stat = org->evaluationStatus();
-					if ( stat != PRELIMINARY || !_allowPreliminary ) {
-						SEISCOMP_DEBUG("%s: skipping due to valid evaluation status", org->publicID().c_str());
-						return;
+				if ( !_allowAnyStatus ) {
+					try {
+						EvaluationStatus stat = org->evaluationStatus();
+						if ( stat != PRELIMINARY || !_allowPreliminary ) {
+							SEISCOMP_DEBUG("%s: skipping due to valid evaluation status", org->publicID().c_str());
+							return;
+						}
 					}
+					catch ( ... ) {}
 				}
-				catch ( ... ) {}
 
 				OriginPtr newOrg;
 
@@ -619,16 +623,17 @@ class Reloc : public Client::Application {
 		std::string                _originIDSuffix;
 		std::string                _locatorType;
 		std::string                _locatorProfile;
-		bool                       _ignoreRejected;
-		bool                       _allowPreliminary;
-		bool                       _allowManual;
-		bool                       _adoptFixedDepth;
+		bool                       _ignoreRejected{false};
+		bool                       _allowPreliminary{false};
+		bool                       _allowAnyStatus{false};
+		bool                       _allowManual{false};
+		bool                       _adoptFixedDepth{false};
 		LocatorInterfacePtr        _locator;
 		PublicObjectTimeSpanBuffer _cache;
 		ObjectLog                 *_inputOrgs;
 		ObjectLog                 *_outputOrgs;
-		bool                       _useWeight;
-		bool                       _storeSourceOriginID;
+		bool                       _useWeight{false};
+		bool                       _storeSourceOriginID{false};
 		std::string                _originEvaluationMode;
 		std::string                _epFile;
 		size_t                     _repeatedRelocationCount;
