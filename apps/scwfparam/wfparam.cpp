@@ -44,7 +44,7 @@
 #include <seiscomp/utils/files.h>
 #include <seiscomp/system/hostinfo.h>
 
-#include <boost/bind.hpp>
+#include <functional>
 #include <sys/wait.h>
 
 
@@ -364,7 +364,7 @@ WFParam::WFParam(int argc, char **argv) : Application(argc, argv) {
 
 	setAutoAcquisitionStart(false);
 
-	_cache.setPopCallback(boost::bind(&WFParam::removedFromCache, this, _1));
+	_cache.setPopCallback(bind(&WFParam::removedFromCache, this, placeholders::_1));
 
 	_processingInfoChannel = NULL;
 	_processingInfoOutput = NULL;
