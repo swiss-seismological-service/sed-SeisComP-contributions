@@ -57,7 +57,7 @@ class Reloc : public Client::Application {
 
 			// set up 1 hour of pick caching
 			// otherwise the picks will be read from the database
-			_cache.setTimeSpan(Core::TimeSpan(60*60));
+			_cache.setTimeSpan(Core::TimeSpan(60 * 60, 0));
 
 			_useWeight = false;
 			_originEvaluationMode = "AUTOMATIC";
