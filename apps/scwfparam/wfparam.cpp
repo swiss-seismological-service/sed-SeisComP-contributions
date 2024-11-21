@@ -1145,7 +1145,7 @@ bool WFParam::addProcess(DataModel::Event *evt) {
 	else
 		proc = pit->second;
 
-	Core::Time nextRun = now + Core::TimeSpan(_config.updateDelay);
+	Core::Time nextRun = now + Core::TimeSpan(_config.updateDelay, 0);
 
 	Crontab::iterator it = _crontab.find(evt->publicID());
 	if ( it != _crontab.end() ) {
@@ -1189,7 +1189,7 @@ bool WFParam::addProcess(DataModel::Event *evt) {
 		job->runTimes.push_back(nextRun);
 	else {
 		for ( size_t i = 0; i < _config.delayTimes.size(); ++i )
-			job->runTimes.push_back(proc->referenceTime + Core::TimeSpan(_config.delayTimes[i]));
+			job->runTimes.push_back(proc->referenceTime + Core::TimeSpan(_config.delayTimes[i], 0));
 	}
 
 	SEISCOMP_DEBUG("%s: adding new cronjob", evt->publicID().c_str());
@@ -2576,7 +2576,7 @@ void WFParam::collectResults() {
 					*os << " time=\"" << org->time().value().iso() << "\"";
 
 				*os << " locstring=\"" << locstring << "\""
-				    << " created=\"" << Core::Time::GMT().seconds() << "\"/>"
+				    << " created=\"" << Core::Time::UTC().epochSeconds() << "\"/>"
 				    << endl;
 			}
 			catch ( exception &e ) {

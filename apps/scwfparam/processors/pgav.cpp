@@ -745,7 +745,7 @@ void PGAV::process(const Record *record, const DoubleArray &) {
 #endif
 
 	// signal and noise window relative to _continuous->startTime()
-	double dttrig  = _trigger - dataTimeWindow().startTime();
+	double dttrig  = (_trigger - dataTimeWindow().startTime()).length();
 	double dtn1 = dttrig - _config.preEventWindowLength;
 	double dtn2 = dtn1 + _config.totalTimeWindowLength;
 	double dt = 1.0 / _stream.fsamp;
