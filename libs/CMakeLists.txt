@@ -1,1 +1,4 @@
 SUBDIRS(seiscomp)
+IF (SC_GLOBAL_PYTHON_WRAPPER)
+	SUBDIRS(swig)
+ENDIF ()
