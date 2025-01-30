@@ -412,7 +412,7 @@ class Reloc : public Client::Application {
 
 			Origin *org = Origin::Cast(obj);
 			if ( org ) {
-				logObject(_inputOrgs, Core::Time::GMT());
+				logObject(_inputOrgs, Core::Time::UTC());
 
 				if ( isAgencyIDBlocked(objectAgencyID(org)) ) {
 					SEISCOMP_DEBUG("%s: skipping: agencyID '%s' is blocked",
@@ -549,7 +549,7 @@ class Reloc : public Client::Application {
 				}
 				catch ( ... ) {
 					newOrg->setCreationInfo(CreationInfo());
-					newOrg->creationInfo().setCreationTime(Core::Time::GMT());
+					newOrg->creationInfo().setCreationTime(Core::Time::UTC());
 					ci = &newOrg->creationInfo();
 				}
 
@@ -594,7 +594,7 @@ class Reloc : public Client::Application {
 		bool send(Origin *org) {
 			if ( org == NULL ) return false;
 
-			logObject(_outputOrgs, Core::Time::GMT());
+			logObject(_outputOrgs, Core::Time::UTC());
 
 			if ( commandline().hasOption("test") ) return true;
 
