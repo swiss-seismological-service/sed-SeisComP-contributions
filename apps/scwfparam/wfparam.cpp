@@ -70,9 +70,9 @@ namespace {
 struct FreqOption : Application::Option {
 	FreqOption(double *var,
 	           const char *cfgname,
-	           const char *cligroup = NULL,
-	           const char *cliparam = NULL,
-	           const char *clidesc = NULL,
+	           const char *cligroup = nullptr,
+	           const char *cliparam = nullptr,
+	           const char *clidesc = nullptr,
 	           bool clidefault = false)
 	: Option(cfgname, cligroup, cliparam, clidesc, clidefault, false),
 	  storage(var) {
@@ -80,8 +80,8 @@ struct FreqOption : Application::Option {
 	}
 
 	void bind(Seiscomp::System::CommandLine *cli) {
-		if ( cliParam == NULL ) return;
-		if ( cliGroup != NULL ) cli->addGroup(cliGroup);
+		if ( cliParam == nullptr ) return;
+		if ( cliGroup != nullptr ) cli->addGroup(cliGroup);
 		if ( cliSwitch )
 			cli->addOption(cliGroup?cliGroup:"Generic",
 			               cliParam, cliDesc);
@@ -91,7 +91,7 @@ struct FreqOption : Application::Option {
 	}
 
 	bool get(Seiscomp::System::CommandLine *cli) {
-		if ( cliParam == NULL ) return true;
+		if ( cliParam == nullptr ) return true;
 		if ( cli->hasOption(cliParam) ) {
 			int res = PGAV::Config::freqFromString(*storage, _strValue);
 			if ( res ) {
@@ -161,7 +161,7 @@ string toXML(const string &input) {
 
 #define NEW_OPT(var, ...) addOption(&var, __VA_ARGS__)
 #define NEW_OPT_FREQ(var, ...) addOption(new FreqOption(&var, __VA_ARGS__))
-#define NEW_OPT_CLI(var, ...) addOption(&var, NULL, __VA_ARGS__)
+#define NEW_OPT_CLI(var, ...) addOption(&var, nullptr, __VA_ARGS__)
 
 
 enum MyNotifications {
@@ -172,7 +172,7 @@ enum MyNotifications {
 namespace {
 
 
-Core::Time now;
+OPT(Core::Time) now;
 
 
 pid_t startExternalProcess(const vector<string> &cmdparams) {
@@ -192,7 +192,7 @@ pid_t startExternalProcess(const vector<string> &cmdparams) {
 			if ( i > 0 ) cmdline += " ";
 			cmdline += cmdparams[i];
 		}
-		params.push_back(NULL);
+		params.push_back(nullptr);
 
 		SEISCOMP_DEBUG("$ %s", cmdline.c_str());
 		execv(params[0], &params[0]);
@@ -366,8 +366,8 @@ WFParam::WFParam(int argc, char **argv) : Application(argc, argv) {
 
 	_cache.setPopCallback(bind(&WFParam::removedFromCache, this, placeholders::_1));
 
-	_processingInfoChannel = NULL;
-	_processingInfoOutput = NULL;
+	_processingInfoChannel = nullptr;
+	_processingInfoOutput = nullptr;
 
 	_acquisitionTimeout = 0;
 	_wantShakeMapPGA = true;
@@ -466,7 +466,7 @@ WFParam::WFParam(int argc, char **argv) : Application(argc, argv) {
 	cout << "<configuration-options>" << endl;
 	cout << "  <cfg>" << endl;
 	for ( Options::const_iterator it = options().begin(); it != options().end(); ++it ) {
-		if ( (*it)->cfgName == NULL ) continue;
+		if ( (*it)->cfgName == nullptr ) continue;
 		cout << " {{{";
 		cout << (*it)->cfgName << " [";
 		(*it)->printStorage(cout);
@@ -477,10 +477,10 @@ WFParam::WFParam(int argc, char **argv) : Application(argc, argv) {
 
 	cout << "  <cli>" << endl;
 	for ( Options::const_iterator it = options().begin(); it != options().end(); ++it ) {
-		if ( (*it)->cliParam == NULL ) continue;
+		if ( (*it)->cliParam == nullptr ) continue;
 		cout << " {{{--";
 		cout << (*it)->cliParam;
-		if ( (*it)->cfgName == NULL ) {
+		if ( (*it)->cfgName == nullptr ) {
 			cout << " [";
 			(*it)->printStorage(cout);
 			cout << "]}}}::" << endl;
@@ -954,17 +954,16 @@ void WFParam::handleTimeout() {
 		// Reset counter
 		_cronCounter = _config.wakeupInterval;
 
-		Crontab::iterator it;
-		now = Core::Time::GMT();
+		now = Core::Time::UTC();
 
 		// Update crontab
-		for ( it = _crontab.begin(); it != _crontab.end(); ) {
+		for ( auto it = _crontab.begin(); it != _crontab.end(); ) {
 			Cronjob *job = it->second.get();
 
 			Processes::iterator pit = _processes.find(it->first);
-			ProcessPtr proc = (pit == _processes.end()?NULL:pit->second);
+			ProcessPtr proc = (pit == _processes.end() ? nullptr : pit->second);
 
-			if ( proc == NULL ) {
+			if ( !proc ) {
 				SEISCOMP_WARNING("No processor for cronjob %s", it->first.c_str());
 				++it;
 				continue;
@@ -973,13 +972,14 @@ void WFParam::handleTimeout() {
 			// Skip processes where nextRun is not set
 			if ( job->runTimes.empty() ) {
 				// Jobs stopped for more than a day now?
-				if ( (now - proc->lastRun).seconds() >= _config.eventMaxIdleTime ) {
+				if ( (*now - proc->lastRun).seconds() >= _config.eventMaxIdleTime ) {
 					SEISCOMP_DEBUG("Process %s idle time expired, removing",
 					               proc->event->publicID().c_str());
 					removeProcess(it, proc.get());
 				}
-				else
+				else {
 					++it;
+				}
 
 				continue;
 			}
@@ -1021,21 +1021,24 @@ void WFParam::handleTimeout() {
 			_processQueue.pop_front();
 			startProcess(proc.get());
 		}
-		else if ( isRecordThreadActive() && !_processQueue.empty() )
+		else if ( isRecordThreadActive() && !_processQueue.empty() ) {
 			SEISCOMP_DEBUG("Acquistion active, starting next process deferred");
+		}
 
 		// Dump crontab if activated
 		if ( _config.logCrontab ) {
 			ofstream of((Environment::Instance()->logDir() + "/" + name() + ".sched").c_str());
-			of << "Now: " << now.toString("%F %T") << endl;
+			of << "Now: " << now->toString("%F %T") << endl;
 			of << "------------------------" << endl;
 			of << "[Schedule]" << endl;
-			for ( it = _crontab.begin(); it != _crontab.end(); ++it ) {
-				if ( !it->second->runTimes.empty() )
+			for ( auto it = _crontab.begin(); it != _crontab.end(); ++it ) {
+				if ( !it->second->runTimes.empty() ) {
 					of << it->second->runTimes.front().toString("%F %T") << "\t" << it->first
-					   << "\t" << (it->second->runTimes.front()-now).seconds() << endl;
-				else
+					   << "\t" << (it->second->runTimes.front() - *now).seconds() << endl;
+				}
+				else {
 					of << "STOPPED            \t" << it->first << endl;
+				}
 			}
 
 			// Dump process queue if not empty
@@ -1085,7 +1088,7 @@ bool WFParam::addProcess(DataModel::Event *evt) {
 		return false;
 	}
 
-	now = Core::Time::GMT();
+	now = Core::Time::UTC();
 
 	OriginPtr org = _cache.get<Origin>(evt->preferredOriginID());
 	if ( !org ) {
@@ -1120,7 +1123,7 @@ bool WFParam::addProcess(DataModel::Event *evt) {
 				DatabaseIterator it;
 				JournalEntryPtr entry;
 				it = query()->getJournalAction(evt->publicID(), JOURNAL_ACTION);
-				while ( (entry = static_cast<JournalEntry*>(*it)) != NULL ) {
+				while ( (entry = static_cast<JournalEntry*>(*it)) != nullptr ) {
 					if ( entry->parameters() == JOURNAL_ACTION_COMPLETED ) {
 						SEISCOMP_INFO("%s: found journal entry \"completely processed\", ignoring event",
 						              evt->publicID().c_str());
@@ -1138,16 +1141,17 @@ bool WFParam::addProcess(DataModel::Event *evt) {
 
 		SEISCOMP_DEBUG("Adding process [%s]", evt->publicID().c_str());
 		proc = new Process;
-		proc->created = now;
+		proc->created = *now;
 		proc->event = evt;
 		_processes[evt->publicID()] = proc;
 	}
-	else
+	else {
 		proc = pit->second;
+	}
 
-	Core::Time nextRun = now + Core::TimeSpan(_config.updateDelay, 0);
+	Core::Time nextRun = *now + Core::TimeSpan(_config.updateDelay, 0);
 
-	Crontab::iterator it = _crontab.find(evt->publicID());
+	auto it = _crontab.find(evt->publicID());
 	if ( it != _crontab.end() ) {
 		// Update reference time
 		try {
@@ -1185,11 +1189,13 @@ bool WFParam::addProcess(DataModel::Event *evt) {
 	// Debug to test next run in 20 seconds
 	//job->delayTimes.push_back(now-job->referenceTime+Core::TimeSpan(20));
 
-	if ( _config.delayTimes.empty() )
+	if ( _config.delayTimes.empty() ) {
 		job->runTimes.push_back(nextRun);
+	}
 	else {
-		for ( size_t i = 0; i < _config.delayTimes.size(); ++i )
+		for ( size_t i = 0; i < _config.delayTimes.size(); ++i ) {
 			job->runTimes.push_back(proc->referenceTime + Core::TimeSpan(_config.delayTimes[i], 0));
+		}
 	}
 
 	SEISCOMP_DEBUG("%s: adding new cronjob", evt->publicID().c_str());
@@ -1208,7 +1214,8 @@ bool WFParam::startProcess(Process *proc) {
 	SEISCOMP_DEBUG("Starting process [%s]", proc->event->publicID().c_str());
 	_currentProcess = proc;
 	_currentProcess->newValidResults = 0;
-	_currentProcess->lastRun = now;
+	// Now is set in handleTimeout before calling this method
+	_currentProcess->lastRun = *now;
 
 	MagnitudePtr mag = _cache.get<Magnitude>(proc->event->preferredMagnitudeID());
 	if ( mag ) {
@@ -1228,12 +1235,12 @@ bool WFParam::startProcess(Process *proc) {
 		return false;
 
 	if ( !handle(proc->event.get()) ) {
-		_currentProcess = NULL;
+		_currentProcess = nullptr;
 		return false;
 	}
 
 	if ( !isRecordThreadActive() ) {
-		_currentProcess = NULL;
+		_currentProcess = nullptr;
 		return false;
 	}
 
@@ -1324,7 +1331,7 @@ bool WFParam::handle(Seiscomp::DataModel::Origin *org) {
 	// Copy default values
 	_maximumEpicentralDistance = _config.maximumEpicentralDistance;
 	_totalTimeWindowLength = _config.totalTimeWindowLength;
-	_currentProcess = NULL;
+	_currentProcess = nullptr;
 
 	process(org);
 	return true;
@@ -1336,10 +1343,13 @@ bool WFParam::handle(Seiscomp::DataModel::Origin *org) {
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 void WFParam::process(Origin *origin) {
-	if ( !origin ) return;
+	if ( !origin ) {
+		return;
+	}
 
-	if ( origin->arrivalCount() == 0 && query() )
+	if ( origin->arrivalCount() == 0 && query() ) {
 		query()->loadArrivals(origin);
+	}
 
 	if ( Private::status(origin) == REJECTED ) {
 		SEISCOMP_INFO("Ignoring origin %s with status = REJECTED",
@@ -1347,9 +1357,10 @@ void WFParam::process(Origin *origin) {
 		return;
 	}
 
-	Client::Inventory *inv = Client::Inventory::Instance();
-	DataModel::Inventory *inventory = inv->inventory();
-	if ( inventory == NULL ) {
+	auto inv = Client::Inventory::Instance();
+	auto inventory = inv->inventory();
+
+	if ( !inventory ) {
 		SEISCOMP_ERROR("Inventory not available");
 		return;
 	}
@@ -1360,7 +1371,7 @@ void WFParam::process(Origin *origin) {
 	// Clear all station time windows
 	_stationRequests.clear();
 
-	if ( recordStream() == NULL ) {
+	if ( !recordStream() ) {
 		if ( !openStream() ) {
 			SEISCOMP_ERROR("%s: unable to open stream", recordStreamURL().c_str());
 			return;
@@ -1369,10 +1380,10 @@ void WFParam::process(Origin *origin) {
 
 	// Typedef a pickmap entry containing the pick and
 	// the distance of the station from the origin
-	typedef pair<PickCPtr, double> PickStreamEntry;
+	using PickStreamEntry = pair<PickCPtr, double>;
 
 	// Typedef a pickmap that maps a streamcode to a pick
-	typedef map<string, PickStreamEntry> PickStreamMap;
+	using PickStreamMap = map<string, PickStreamEntry>;
 
 	// This map is needed to find the earliest P pick of
 	// a certain stream
@@ -1398,10 +1409,12 @@ void WFParam::process(Origin *origin) {
 	_report << " + Hypocenter" << endl;
 	_report << "   + origin " << origin->publicID() << endl;
 	_report << " + Parameters" << endl;
-	if ( _currentProcess->lastMagnitude )
+	if ( _currentProcess->lastMagnitude ) {
 		_report << "   + magnitude = " << *_currentProcess->lastMagnitude << endl;
-	else
+	}
+	else {
 		_report << "   + magnitude is none" << endl;
+	}
 	_report << "   + saturation threshold = " << _config.saturationThreshold << "% of 2**23" << endl;
 	_report << "   + maximum epicentral distance = " << _maximumEpicentralDistance << "km" << endl;
 	_report << "   + pre event window length = " << _config.preEventWindowLength << "s" << endl;
@@ -1420,7 +1433,7 @@ void WFParam::process(Origin *origin) {
 	set<string> usedStations;
 
 	for ( size_t i = 0; i < origin->arrivalCount(); ++i ) {
-		Arrival *arr = origin->arrival(i);
+		auto arr = origin->arrival(i);
 		const string &pickID = arr->pickID();
 
 		double weight = Private::arrivalWeight(arr);
@@ -1437,18 +1450,19 @@ void WFParam::process(Origin *origin) {
 			continue;
 		}
 
-		DataModel::WaveformStreamID wfid = pick->waveformID();
+		auto wfid = pick->waveformID();
 		// Strip the component code because every AmplitudeProcessor
 		// will use its own component to pick the amplitude on
 		wfid.setChannelCode(wfid.channelCode().substr(0,2));
 
 		string stationID = Private::toStationID(wfid);
-		PickStreamEntry &e = pickStreamMap[stationID];
+		auto &e = pickStreamMap[stationID];
 
 		// When there is already a pick registered for this stream which has
 		// been picked earlier, ignore the current pick
-		if ( e.first && e.first->time().value() < pick->time().value() )
+		if ( e.first && e.first->time().value() < pick->time().value() ) {
 			continue;
+		}
 
 		e.first = pick;
 		e.second = Private::arrivalDistance(arr);
@@ -1457,15 +1471,31 @@ void WFParam::process(Origin *origin) {
 	}
 
 	for ( size_t n = 0; n < inventory->networkCount(); ++n ) {
-		DataModel::Network *net = inventory->network(n);
-		if ( net->start() > _originTime ) continue;
-		try { if ( net->end() < _originTime ) continue; }
+		auto net = inventory->network(n);
+
+		if ( net->start() > _originTime ) {
+			continue;
+		}
+
+		try {
+			if ( net->end() < _originTime ) {
+				continue;
+			}
+		}
 		catch ( ... ) {}
 
 		for ( size_t s = 0; s < net->stationCount(); ++s ) {
-			DataModel::Station *sta = net->station(s);
-			if ( sta->start() > _originTime ) continue;
-			try { if ( sta->end() < _originTime ) continue; }
+			auto sta = net->station(s);
+
+			if ( sta->start() > _originTime ) {
+				continue;
+			}
+
+			try {
+				if ( sta->end() < _originTime ) {
+					continue;
+				}
+			}
 			catch ( ... ) {}
 
 			double distance, az, baz;
@@ -1521,13 +1551,13 @@ void WFParam::process(Origin *origin) {
 			if ( maxVel && _currentProcess->hasBeenProcessed(maxVel) ) {
 				_report << "     - vel " << maxVel->sensorLocation()->code()
 				        << "." << maxVel->code().substr(0,2) << " [processed already]" << endl;
-				maxVel = NULL;
+				maxVel = nullptr;
 			}
 
 			if ( maxAcc && _currentProcess->hasBeenProcessed(maxAcc) ) {
 				_report << "     - acc " << maxAcc->sensorLocation()->code()
 				        << "." << maxAcc->code().substr(0,2) << " [processed already]" << endl;
-				maxAcc = NULL;
+				maxAcc = nullptr;
 			}
 			*/
 
@@ -1560,7 +1590,7 @@ void WFParam::process(Origin *origin) {
 				}
 
 				for ( int i = 0; i < 3; ++i ) {
-					if ( tc.comps[i] == NULL ) continue;
+					if ( tc.comps[i] == nullptr ) continue;
 					tmp.setChannelCode(tc.comps[i]->code());
 					if ( _currentProcess->hasBeenProcessed(tc.comps[i]) ) {
 						_report << "     - acc " << tmp.locationCode()
@@ -1596,7 +1626,7 @@ void WFParam::process(Origin *origin) {
 				}
 
 				for ( int i = 0; i < 3; ++i ) {
-					if ( tc.comps[i] == NULL ) continue;
+					if ( tc.comps[i] == nullptr ) continue;
 					tmp.setChannelCode(tc.comps[i]->code());
 					if ( _currentProcess->hasBeenProcessed(tc.comps[i]) ) {
 						_report << "     - vel " << tmp.locationCode()
@@ -1649,14 +1679,18 @@ void WFParam::process(Origin *origin) {
 	_acquisitionTimer.restart();
 	_noDataTimer.restart();
 	_acquisitionTimeout = _config.initialAcquisitionTimeout;
-	if ( _acquisitionTimeout > 0 )
+
+	if ( _acquisitionTimeout > 0 ) {
 		SEISCOMP_INFO("set stream timeout to %d seconds", _acquisitionTimeout);
+	}
 
 	if ( _config.dumpRecords ) {
-		if ( _currentProcess->event )
+		if ( _currentProcess->event ) {
 			_recordDumpOutput.open((_currentProcess->event->publicID() + ".recs").c_str());
-		else
+		}
+		else {
 			_recordDumpOutput.open("dump.recs");
+		}
 	}
 
 	startRecordThread();
@@ -1697,13 +1731,13 @@ int WFParam::addProcessor(const DataModel::WaveformStreamID &waveformID,
 	proc->setUsedComponent(component);
 
 	// Lookup station parameters of config module
-	Util::KeyValues *params = NULL;
+	Util::KeyValues *params = nullptr;
 	string stationID = waveformID.networkCode() + "." +
 	                   waveformID.stationCode();
 	KeyMap::iterator it = _keys.find(stationID);
 	if ( it != _keys.end() )
 		params = it->second.get();
-	else if ( configModule() != NULL ) {
+	else if ( configModule() != nullptr ) {
 		for ( size_t i = 0; i < configModule()->configStationCount(); ++i ) {
 			ConfigStation *station = configModule()->configStation(i);
 
@@ -1799,7 +1833,7 @@ int WFParam::addProcessor(const DataModel::WaveformStreamID &waveformID,
 
 	for ( int i = 0; i < componentCount; ++i ) {
 		cwids[i] = tmp;
-		if ( tc.comps[components[i]] == NULL ) {
+		if ( tc.comps[components[i]] == nullptr ) {
 			_report << "       - PGAV [components not found]" << endl;
 			return -1;
 		}
@@ -1852,7 +1886,7 @@ int WFParam::addProcessor(const DataModel::WaveformStreamID &waveformID,
 	proc->computeTimeWindow();
 
 	// Check: end-time in future?
-	if ( now.valid() && (proc->safetyTimeWindow().endTime() > now) ) {
+	if ( now && (proc->safetyTimeWindow().endTime() > *now) ) {
 		_report << "       - PGAV [end of time window in future]" << endl;
 		return -3;
 	}
@@ -1936,10 +1970,10 @@ std::string WFParam::generateEventID(const DataModel::Event *evt) {
 	char buf[20];
 
 	// EventOriginTime_Mag_Lat_Lon_CreationDate
-	if ( evt == NULL ) return "";
+	if ( evt == nullptr ) return "";
 
 	OriginPtr org = _cache.get<Origin>(evt->preferredOriginID());
-	if ( org == NULL ) return "";
+	if ( org == nullptr ) return "";
 
 	if ( _config.enableShortEventID )
 		return org->time().value().toString("%Y%m%d%H%M%S");
@@ -1977,7 +2011,7 @@ std::string WFParam::generateEventID(const DataModel::Event *evt) {
 		t = org->creationInfo().creationTime();
 	}
 	catch ( ... ) {
-		t = Core::Time::GMT();
+		t = Core::Time::UTC();
 	}
 
 	id += t.toString("%Y%m%d%H%M%S");
@@ -2135,7 +2169,7 @@ bool WFParam::createProcessor(Record *rec) {
 		inv->getStream(tmp.networkCode(), tmp.stationCode(),
 		               tmp.locationCode(), tmp.channelCode(), _originTime);
 
-	if ( stream == NULL ) {
+	if ( stream == nullptr ) {
 		_report << "   - " << rec->streamID() << " [no inventory information]" << endl;
 		return false;
 	}
@@ -2190,7 +2224,7 @@ bool WFParam::createProcessor(Record *rec) {
 	        << tmp.channelCode().substr(0,2) << endl;
 	*/
 
-	addProcessor(tmp, NULL, triggerTime);
+	addProcessor(tmp, nullptr, triggerTime);
 
 	return true;
 }
@@ -2221,7 +2255,7 @@ bool WFParam::dispatchNotification(int type, Core::BaseObject *obj) {
 					entry->setAction(JOURNAL_ACTION);
 					entry->setParameters(JOURNAL_ACTION_COMPLETED);
 					entry->setSender(name() + "@" + System::HostInfo().name());
-					entry->setCreated(Core::Time::GMT());
+					entry->setCreated(Core::Time::UTC());
 					Notifier::Enable();
 					Notifier::Create(journal.publicID(), OP_ADD, entry.get());
 					Notifier::Disable();
@@ -2232,7 +2266,7 @@ bool WFParam::dispatchNotification(int type, Core::BaseObject *obj) {
 			}
 
 			_acquisitionTimeout = 0;
-			_currentProcess = NULL;
+			_currentProcess = nullptr;
 			handleTimeout();
 
 			if ( (!_config.eventID.empty() && _crontab.empty()) ||
@@ -2254,7 +2288,7 @@ bool WFParam::dispatchNotification(int type, Core::BaseObject *obj) {
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 void WFParam::acquisitionFinished() {
 	if ( _config.dumpRecords ) _recordDumpOutput.close();
-	sendNotification(Client::Notification(AcquisitionFinished, NULL));
+	sendNotification(Client::Notification(AcquisitionFinished, nullptr));
 }
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -2495,7 +2529,7 @@ void WFParam::collectResults() {
 
 	if ( _config.shakeMap.output.enable && (newResultsAvailable || _config.forceShakemap) ) {
 		ofstream of;
-		Core::Time timestamp = Core::Time::GMT();
+		Core::Time timestamp = Core::Time::UTC();
 		string eventPath, path;
 		string eventID, shakeMapEventID, locstring;
 		bool writeToFile = _config.shakeMap.output.path != "-";
@@ -2684,7 +2718,7 @@ void WFParam::writeShakeMapComponent(const PGAVResult *res, bool &stationTag,
 		);
 	}
 
-	DataModel::Sensor *sensor = stream?DataModel::Sensor::Find(stream->sensor()):NULL;
+	DataModel::Sensor *sensor = stream?DataModel::Sensor::Find(stream->sensor()):nullptr;
 	if ( !sensor ) {
 		SEISCOMP_WARNING("%s.%s.%s.%s: sensor not found or not defined",
 			res->streamID.networkCode().c_str(),
@@ -2694,7 +2728,7 @@ void WFParam::writeShakeMapComponent(const PGAVResult *res, bool &stationTag,
 		);
 	}
 
-	DataModel::SensorLocation *loc = stream?stream->sensorLocation():NULL;
+	DataModel::SensorLocation *loc = stream?stream->sensorLocation():nullptr;
 
 	if ( !loc ) {
 		SEISCOMP_WARNING("%s.%s.%s: missing sensor location",
@@ -2810,7 +2844,7 @@ void WFParam::dumpWaveforms(Process *p, PGAVResult &result,
                             const Processing::PGAV *proc) {
 	DataModel::Event *event = p->event.get();
 
-	if ( event == NULL ) return;
+	if ( event == nullptr ) return;
 
 	string filename = _config.waveformOutputPath;
 
@@ -2901,7 +2935,7 @@ void WFParam::dumpSpectra(Process *p, const PGAVResult &result,
                           const Processing::PGAV *proc) {
 	DataModel::Event *event = p->event.get();
 
-	if ( event == NULL ) return;
+	if ( event == nullptr ) return;
 
 	string filename = _config.spectraOutputPath;
 
