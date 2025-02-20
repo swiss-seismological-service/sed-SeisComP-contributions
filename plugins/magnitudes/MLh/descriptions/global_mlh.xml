@@ -16,42 +16,38 @@
 		at the Liverpool developer meeting.
 		</description>
 		<configuration>
-			<group name="amplitudes">
-				<group name="MLh">
-					<parameter name="maxavg" type="string" default="max">
-						<description>
-						Define combiner operation for both horizontals (min, max, avg).
-						</description>
-					</parameter>
-					<parameter name="ClippingThreshold" type="double">
-						<description>
-						MLh clipping level, in raw counts, eg. 80% of 2^23 = 6710886.
-						</description>
-					</parameter>
-				</group>
-			</group>
-			<group name="magnitudes">
-				<group name="MLh">
-					<parameter name="params" type="string">
-						<description>
-						Defines attenuation parameters for MLh.
-						Format: &quot;UpToKilometers A B; UpToNextKilometers A B;&quot;.
-						Example: &quot;30 nomag; 60 0.018 2.17; 700 0.0038 3.02&quot;.
-						The first parameter set &quot;30 nomag&quot; means that up to 30km
-						from the sensor the magnitude should not be calculated.
+			<extend-struct type="GlobalBindingsAmplitudeProfile" match-name="MLh">
+				<parameter name="maxavg" type="string" default="max">
+					<description>
+					Define combiner operation for both horizontals (min, max, avg).
+					</description>
+				</parameter>
+				<parameter name="ClippingThreshold" type="double">
+					<description>
+					MLh clipping level, in raw counts, eg. 80% of 2^23 = 6710886.
+					</description>
+				</parameter>
+			</extend-struct>
+			<extend-struct type="GlobalBindingsMagnitudeProfile" match-name="MLh">
+				<parameter name="params" type="string">
+					<description>
+					Defines attenuation parameters for MLh.
+					Format: &quot;UpToKilometers A B; UpToNextKilometers A B;&quot;.
+					Example: &quot;30 nomag; 60 0.018 2.17; 700 0.0038 3.02&quot;.
+					The first parameter set &quot;30 nomag&quot; means that up to 30km
+					from the sensor the magnitude should not be calculated.
 
-						Note: No MLh computation if params is empty.
-						</description>
-					</parameter>
-					<parameter name="maxDepth" type="double" unit="km" default="80" >
-						<description>
-							Maximum depth allowed to compute the magnitude. Make sure to
-							also update the MLh amplitude bindings accordingly to this
-							value. maxDepth should not be greater than 80km. 
-						</description>
-					</parameter>
-				</group>
-			</group>
+					Note: No MLh computation if params is empty.
+					</description>
+				</parameter>
+				<parameter name="maxDepth" type="double" unit="km" default="80" >
+					<description>
+						Maximum depth allowed to compute the magnitude. Make sure to
+						also update the MLh amplitude bindings accordingly to this
+						value. maxDepth should not be greater than 80km.
+					</description>
+				</parameter>
+			</extend-struct>
 		</configuration>
 	</binding>
 </seiscomp>

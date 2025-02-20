@@ -559,15 +559,21 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 
 		list<param_struct> list_of_parametersets;
 		param_struct selected_parameterset;
-		double maxDepth;
 
 
 	public:
 		MagnitudeProcessor_ML()
-		: Processing::MagnitudeProcessor(MAG_TYPE), maxDepth(DEPTH_MAX) {}
+		: Processing::MagnitudeProcessor(MAG_TYPE) {}
 
+		void setDefaults() override {
+			_minimumDistanceDeg = DELTA_MIN;
+			_maximumDistanceDeg = DELTA_MAX;
+			_maximumDepthKm = DEPTH_MAX;
+		}
 
 		bool setup(const Processing::Settings &settings) override {
+			Processing::MagnitudeProcessor::setup(settings);
+
 			list_of_parametersets.clear();
 
 			try {
@@ -591,15 +597,10 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 				catch ( ... ) {}
 			}
 
-			try {
-				maxDepth = settings.getDouble("magnitudes.MLh.maxDepth");
-			}
-			catch ( ... ) { }
-
-			if (maxDepth > DEPTH_MAX) {
+			if ( _maximumDepthKm && (*_maximumDepthKm > DEPTH_MAX) ) {
 				SEISCOMP_WARNING("maxDepth (%g) is greater than the recommended maximum value of %g km. "
 				                 "If you know what you are doing you can disregard this warning",
-				               maxDepth, double(DEPTH_MAX));
+				                 *_maximumDepthKm, double(DEPTH_MAX));
 			}
 
 			return true;
@@ -625,14 +626,14 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 			const Locale *,
 #endif
 			double &value) override {
-			if ( delta < DELTA_MIN || delta > DELTA_MAX )
+			if ( (delta < DELTA_MIN) || (delta > DELTA_MAX) ) {
+				// Hard limit
 				return DistanceOutOfRange;
+			}
 
-			if ( depth > maxDepth )
-				return DepthOutOfRange;
-
-			if ( !convertAmplitude(amplitude, unit, ExpectedAmplitudeUnit) )
+			if ( !convertAmplitude(amplitude, unit, ExpectedAmplitudeUnit) ) {
 				return InvalidAmplitudeUnit;
+			}
 
 			return compute_ML_sed(amplitude, delta, depth, &value);
 		}
@@ -716,7 +717,7 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 			double depth,     // in kilometers
 			double *mag) {
 
-			float epdistkm,hypdistkm;
+			float epdistkm, hypdistkm;
 
 			if ( list_of_parametersets.size() == 0 ) {
 				SEISCOMP_ERROR("No calibrations configured: see bindings: magnitudes.MLh.params");
@@ -739,14 +740,14 @@ class MagnitudeProcessor_ML : public Processing::MagnitudeProcessor {
 
 			// calculate the distance in kilometers from the distance in degrees
 			epdistkm = Math::Geo::deg2km(delta);
-			hypdistkm = sqrt(epdistkm*epdistkm + depth * depth);
+			hypdistkm = sqrt(epdistkm * epdistkm + depth * depth);
 
 			// read the values for A, B and epdistkm from the config file and
 			// select the right set depending on the distance
 			selected_parameterset = selectParameters(hypdistkm, list_of_parametersets);
 
-			SEISCOMP_DEBUG("Epdistkm: %f\n",epdistkm);
-			SEISCOMP_DEBUG("Hypdistkm: %f\n",hypdistkm);
+			SEISCOMP_DEBUG("Epdistkm: %f\n", epdistkm);
+			SEISCOMP_DEBUG("Hypdistkm: %f\n", hypdistkm);
 
 			if ( selected_parameterset.nomag ) {
 				SEISCOMP_DEBUG( "Epicentral distance out of configured range, no magnitude");
