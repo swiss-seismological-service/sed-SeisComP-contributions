@@ -39,6 +39,12 @@ class SMDump : public Seiscomp::Client::Application {
 					"This option can be given more than once."
 				)
 				& cfg(originIDs, "origins")
+				& cli(
+					eventIDs, "Input", "event,E",
+					"A publicID of an event to be exported. "
+					"This option can be given more than once."
+				)
+				& cfg(eventIDs, "events")
 				& cliSwitch(
 					withEventRecordReferences, "Dump", "with-event-records,r",
 					"Include event records."
@@ -50,6 +56,10 @@ class SMDump : public Seiscomp::Client::Application {
 				& cliSwitch(
 					withRecords, "Dump", "with-ruptures,R",
 					"Include ruptures."
+				)
+				& cliSwitch(
+					preferredOnly, "Dump", "preferred-only,p",
+					"When dumping events, only the preferred origin will be dumped."
 				)
 				& cliSwitch(
 					formatted, "Output", "formatted,f",
@@ -67,8 +77,10 @@ class SMDump : public Seiscomp::Client::Application {
 			bool                     withEventRecordReferences{false};
 			bool                     withRecords{false};
 			bool                     withRupture{false};
+			bool                     preferredOnly{false};
 			std::string              output;
 			std::vector<std::string> originIDs;
+			std::vector<std::string> eventIDs;
 		} _settings;
 };
 

@@ -51,37 +51,100 @@ bool SMDump::run() {
 
 	std::set<std::string> recordIds;
 
-	for ( const auto &id : _settings.originIDs ) {
-		po = reader.getObject(
-			DataModel::StrongMotion::StrongOriginDescription::TypeInfo(), id
-		);
-		if ( !po ) {
-			SEISCOMP_WARNING("%s: StrongOriginDescription not found", id);
-			continue;
+	auto [baseQ, hasWhereClause] = reader.getObjectsQuery(string(), DataModel::StrongMotion::StrongOriginDescription::TypeInfo());
+	if ( baseQ.empty() ) {
+		SEISCOMP_ERROR("Internal error: failed to create database query");
+		return false;
+	}
+
+	if ( !hasWhereClause ) {
+		baseQ += " where ";
+	}
+	else {
+		baseQ += " and ";
+	}
+
+	baseQ += DataModel::StrongMotion::StrongOriginDescription::TypeInfo().className();
+	baseQ += ".";
+	baseQ += reader.driver()->convertColumnName("originID");
+	baseQ += "=";
+
+	std::set<std::string> strongOriginIDs;
+
+	auto fetch = [&](string q) {
+		// Fetch all associated StrongOriginDescription
+		vector<DataModel::StrongMotion::StrongOriginDescriptionPtr> orgs;
+
+		auto it = reader.getObjectIterator(q, DataModel::StrongMotion::StrongOriginDescription::TypeInfo());
+		for ( ; it.get(); ++it ) {
+			auto sod = DataModel::StrongMotion::StrongOriginDescription::Cast(it.get());
+			if ( !sod || (strongOriginIDs.find(sod->publicID()) != strongOriginIDs.end()) ) {
+				continue;
+			}
+
+			strongOriginIDs.insert(sod->publicID());
+			orgs.push_back(sod);
 		}
+		it.close();
 
-		auto sod = DataModel::StrongMotion::StrongOriginDescription::Cast(po);
-		if ( !sod ) {
-			SEISCOMP_ERROR("%s: Internal error, returned object is not a StrongOriginDescription: aborting",
-			               id);
-			return false;
-		}
+		for ( auto &sod : orgs ) {
+			if ( _settings.withEventRecordReferences ) {
+				reader.loadEventRecordReferences(sod.get());
 
-		if ( _settings.withEventRecordReferences ) {
-			reader.loadEventRecordReferences(sod);
-
-			if ( _settings.withRecords ) {
-				for ( size_t i = 0; i < sod->eventRecordReferenceCount(); ++i ) {
-					recordIds.insert(sod->eventRecordReference(i)->recordID());
+				if ( _settings.withRecords ) {
+					for ( size_t i = 0; i < sod->eventRecordReferenceCount(); ++i ) {
+						recordIds.insert(sod->eventRecordReference(i)->recordID());
+					}
 				}
 			}
-		}
 
-		if ( _settings.withRupture ) {
-			reader.loadRuptures(sod);
-		}
+			if ( _settings.withRupture ) {
+				reader.loadRuptures(sod.get());
+			}
 
-		sp.add(sod);
+			sp.add(sod.get());
+		}
+	};
+
+	for ( const auto &id : _settings.originIDs ) {
+		string sid;
+		reader.driver()->escape(sid, id);
+		fetch(baseQ + "'" + sid + "'");
+	}
+
+	if ( _settings.preferredOnly ) {
+		baseQ = Core::stringify(
+			"SELECT PublicObject.%s, StrongOriginDescription.* "
+			        "FROM  PublicObject, StrongOriginDescription, "
+			      "Event, PublicObject as PEvent "
+			"WHERE PublicObject._oid=StrongOriginDescription._oid AND "
+			      "Event._oid=PEvent._oid AND PEvent.publicID='%%s' AND "
+			      "StrongOriginDescription.%s=Event.%s",
+			reader.driver()->convertColumnName("publicID"),
+			reader.driver()->convertColumnName("originID"),
+			reader.driver()->convertColumnName("preferredOriginID")
+		);
+	}
+	else {
+		baseQ = Core::stringify(
+			"SELECT PublicObject.%s, StrongOriginDescription.* "
+			        "FROM  PublicObject, StrongOriginDescription, "
+			      "Event, PublicObject as PEvent, "
+			      "OriginReference "
+			"WHERE PublicObject._oid=StrongOriginDescription._oid AND "
+			      "Event._oid=PEvent._oid AND PEvent.publicID='%%s' AND "
+			      "OriginReference._parent_oid=Event._oid AND "
+			      "StrongOriginDescription.%s=OriginReference.%s",
+			reader.driver()->convertColumnName("publicID"),
+			reader.driver()->convertColumnName("originID"),
+			reader.driver()->convertColumnName("originID")
+		);
+	}
+
+	for ( const auto &id : _settings.eventIDs ) {
+		string sid;
+		reader.driver()->escape(sid, id);
+		fetch(Core::stringify(baseQ, sid));
 	}
 
 	for ( const auto &recordId : recordIds ) {

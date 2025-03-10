@@ -3,6 +3,18 @@
 	<module name="scsmdump" category="Processing" inherit-global-bindings="true">
 		<description>Strong motion parameters database dump.</description>
 		<configuration>
+			<parameter name="origins" type="list:string">
+				<description>
+				A list of origins for which strong motion descriptions will be
+				dumped.
+				</description>
+			</parameter>
+			<parameter name="events" type="list:string">
+				<description>
+				A list of events for which strong motion descriptions will be
+				dumped.
+				</description>
+			</parameter>
 		</configuration>
 		<command-line>
 			<group name="Generic">
@@ -34,6 +46,58 @@
 				<optionReference>database#config-module</optionReference>
 				<optionReference>database#inventory-db</optionReference>
 				<optionReference>database#db-disable</optionReference>
+			</group>
+
+			<group name="Input">
+				<option flag="O" long-flag="origin" argument="originID">
+					<description>
+					A publicID of an origin to be exported.
+					This option can be given more than once.
+					</description>
+				</option>
+				<option flag="E" long-flag="event" argument="eventID">
+					<description>
+					A publicID of an event to be exported.
+					This option can be given more than once.
+					</description>
+				</option>
+			</group>
+
+			<group name="Dump">
+				<option flag="r" long-flag="with-event-records">
+					<description>
+					Include event records.
+					</description>
+				</option>
+				<option flag="S" long-flag="with-records">
+					<description>
+					Include records referred to from event records.
+					</description>
+				</option>
+				<option flag="R" long-flag="with-ruptures">
+					<description>
+					Include ruptures.
+					</description>
+				</option>
+				<option flag="p" long-flag="preferred-only">
+					<description>
+					When dumping events, only the preferred origin will be dumped.
+					</description>
+				</option>
+			</group>
+
+			<group name="Output">
+				<option flag="f" long-flag="formatted">
+					<description>
+					Use formatted XML output.
+					</description>
+				</option>
+				<option flag="o" long-flag="output" argument="file">
+					<description>
+					Name of output file. If not given or '-', output
+					is sent to stdout.
+					</description>
+				</option>
 			</group>
 		</command-line>
 	</module>
