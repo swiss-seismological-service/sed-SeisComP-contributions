@@ -118,8 +118,9 @@ bool SMDump::run() {
 			        "FROM  PublicObject, StrongOriginDescription, "
 			      "Event, PublicObject as PEvent "
 			"WHERE PublicObject._oid=StrongOriginDescription._oid AND "
-			      "Event._oid=PEvent._oid AND PEvent.publicID='%%s' AND "
+			      "Event._oid=PEvent._oid AND PEvent.%s='%%s' AND "
 			      "StrongOriginDescription.%s=Event.%s",
+			reader.driver()->convertColumnName("publicID"),
 			reader.driver()->convertColumnName("publicID"),
 			reader.driver()->convertColumnName("originID"),
 			reader.driver()->convertColumnName("preferredOriginID")
@@ -132,9 +133,10 @@ bool SMDump::run() {
 			      "Event, PublicObject as PEvent, "
 			      "OriginReference "
 			"WHERE PublicObject._oid=StrongOriginDescription._oid AND "
-			      "Event._oid=PEvent._oid AND PEvent.publicID='%%s' AND "
+			      "Event._oid=PEvent._oid AND PEvent.%s='%%s' AND "
 			      "OriginReference._parent_oid=Event._oid AND "
 			      "StrongOriginDescription.%s=OriginReference.%s",
+			reader.driver()->convertColumnName("publicID"),
 			reader.driver()->convertColumnName("publicID"),
 			reader.driver()->convertColumnName("originID"),
 			reader.driver()->convertColumnName("originID")
