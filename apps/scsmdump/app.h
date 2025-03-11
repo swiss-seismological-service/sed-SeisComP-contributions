@@ -35,16 +35,14 @@ class SMDump : public Seiscomp::Client::Application {
 				linker
 				& cli(
 					originIDs, "Input", "origin,O",
-					"A publicID of an origin to be exported. "
-					"This option can be given more than once."
+					"ID(s) of origin(s) to dump. Use '-' to read "
+					"the IDs as individual lines from stdin."
 				)
-				& cfg(originIDs, "origins")
 				& cli(
 					eventIDs, "Input", "event,E",
-					"A publicID of an event to be exported. "
-					"This option can be given more than once."
+					"ID(s) of event(s) to export. Use '-' to read "
+					"the IDs as individual lines from stdin."
 				)
-				& cfg(eventIDs, "events")
 				& cliSwitch(
 					withEventRecordReferences, "Dump", "with-event-records,r",
 					"Include event records."
@@ -73,14 +71,14 @@ class SMDump : public Seiscomp::Client::Application {
 				;
 			}
 
-			bool                     formatted{false};
-			bool                     withEventRecordReferences{false};
-			bool                     withRecords{false};
-			bool                     withRupture{false};
-			bool                     preferredOnly{false};
-			std::string              output;
-			std::vector<std::string> originIDs;
-			std::vector<std::string> eventIDs;
+			bool        formatted{false};
+			bool        withEventRecordReferences{false};
+			bool        withRecords{false};
+			bool        withRupture{false};
+			bool        preferredOnly{false};
+			std::string output;
+			std::string originIDs;
+			std::string eventIDs;
 		} _settings;
 };
 

@@ -2,20 +2,7 @@
 <seiscomp>
 	<module name="scsmdump" category="Processing" inherit-global-bindings="true">
 		<description>Strong motion parameters database dump.</description>
-		<configuration>
-			<parameter name="origins" type="list:string">
-				<description>
-				A list of origins for which strong motion descriptions will be
-				dumped.
-				</description>
-			</parameter>
-			<parameter name="events" type="list:string">
-				<description>
-				A list of events for which strong motion descriptions will be
-				dumped.
-				</description>
-			</parameter>
-		</configuration>
+		<configuration/>
 		<command-line>
 			<group name="Generic">
 				<optionReference>generic#help</optionReference>
@@ -51,14 +38,14 @@
 			<group name="Input">
 				<option flag="O" long-flag="origin" argument="originID">
 					<description>
-					A publicID of an origin to be exported.
-					This option can be given more than once.
+					Origin public ID(s) to dump. Multiple origins may be specified
+					as a comma-separated list. Use "-" for reading from stdin.
 					</description>
 				</option>
 				<option flag="E" long-flag="event" argument="eventID">
 					<description>
-					A publicID of an event to be exported.
-					This option can be given more than once.
+					Event public ID(s) to dump. Multiple events may be specified
+					as a comma-separated list. Use "-" for reading from stdin.
 					</description>
 				</option>
 			</group>

@@ -31,6 +31,58 @@ using namespace Seiscomp;
 
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+namespace {
+
+
+bool readIDParam(vector<string> &store, string &previousStdinParam,
+                 const string &value, const string &param) {
+	if ( value.empty() ) {
+		return true;
+	}
+
+	// Read from stdin
+	if ( value == "-" ) {
+		if ( !previousStdinParam.empty() ) {
+			SEISCOMP_ERROR("Conflicting parameter value in '%s' and '%s'. "
+			               "Only one ID paramater may be specified via stdin.",
+			               previousStdinParam.c_str(), param.c_str());
+			return false;
+		}
+
+		previousStdinParam = param;
+
+		string line;
+		while ( std::getline(cin, line) ) {
+			store.push_back(line);
+		}
+
+		// Assert at least one item
+		if ( store.empty() ) {
+			SEISCOMP_ERROR("No IDs found for parameter '%s' on stdin",
+			               param.c_str());
+			return false;
+		}
+	}
+	else {
+		// Split comma-separated list
+		Core::split(store, value, ",");
+	}
+
+	// Sort and unique
+	sort(store.begin(), store.end() );
+	store.erase(unique(store.begin(), store.end()), store.end());
+
+	return true;
+}
+
+
+}
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 SMDump::SMDump(int argc, char** argv)
 : Application(argc, argv) {
 	setMessagingEnabled(false);
@@ -45,6 +97,14 @@ SMDump::SMDump(int argc, char** argv)
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 bool SMDump::run() {
+	vector<string> originIDs, eventIDs;
+	string previousStdinParam;
+
+	if ( !readIDParam(originIDs, previousStdinParam, _settings.originIDs, "origin")
+	  || !readIDParam(eventIDs, previousStdinParam, _settings.eventIDs, "event") ) {
+		return false;
+	}
+
 	DataModel::StrongMotion::StrongMotionReader reader(database());
 	DataModel::StrongMotion::StrongMotionParameters sp;
 	DataModel::PublicObjectPtr po;
@@ -106,7 +166,8 @@ bool SMDump::run() {
 		}
 	};
 
-	for ( const auto &id : _settings.originIDs ) {
+	for ( const auto &id : originIDs ) {
+		SEISCOMP_DEBUG("Process origin %s", id);
 		string sid;
 		reader.driver()->escape(sid, id);
 		fetch(baseQ + "'" + sid + "'");
@@ -143,7 +204,8 @@ bool SMDump::run() {
 		);
 	}
 
-	for ( const auto &id : _settings.eventIDs ) {
+	for ( const auto &id : eventIDs ) {
+		SEISCOMP_DEBUG("Process event %s", id);
 		string sid;
 		reader.driver()->escape(sid, id);
 		fetch(Core::stringify(baseQ, sid));
