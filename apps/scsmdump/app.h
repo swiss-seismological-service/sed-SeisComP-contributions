@@ -52,7 +52,7 @@ class SMDump : public Seiscomp::Client::Application {
 					"Include records referred to from event records."
 				)
 				& cliSwitch(
-					withRecords, "Dump", "with-ruptures,R",
+					withRupture, "Dump", "with-ruptures,R",
 					"Include ruptures."
 				)
 				& cliSwitch(
