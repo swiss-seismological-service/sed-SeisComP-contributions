@@ -45,11 +45,11 @@ class SMDump : public Seiscomp::Client::Application {
 				)
 				& cliSwitch(
 					withEventRecordReferences, "Dump", "with-event-records,r",
-					"Include event records."
+					"Include event record references. This option is necessary in order to export the records itself."
 				)
 				& cliSwitch(
 					withRecords, "Dump", "with-records,S",
-					"Include records referred to from event records."
+					"Include records referred to from event records. This option depends on --with-event-records."
 				)
 				& cliSwitch(
 					withRupture, "Dump", "with-ruptures,R",
