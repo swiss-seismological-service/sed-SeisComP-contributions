@@ -117,22 +117,30 @@
 
 			<group name="Mode">
 				<option long-flag="test">
-					<description>Test mode, do not send any message</description>
+					<description>
+					Test mode, do not send any message.
+					</description>
 				</option>
 			</group>
 
 			<group name="Input">
 				<option flag="O" long-flag="origin-id" argument="arg">
-					<description>Reprocess the origin and send a message unless test mode is activated</description>
+					<description>
+					Reprocess the origin and send a message unless test mode is
+					activated.
+					</description>
 				</option>
 				<option long-flag="locator" argument="arg">
-					<description>The locator type to use</description>
+					<description>The locator type to use.</description>
 				</option>
 				<option long-flag="use-weight" argument="arg" default="0">
-					<description>Use current picks weight</description>
+					<description>Use current picks weight.</description>
 				</option>
 				<option long-flag="evaluation-mode" argument="arg">
-					<description>set origin evaluation mode: &quot;AUTOMATIC&quot; or &quot;MANUAL&quot;</description>
+					<description>
+					Set origin evaluation mode: &quot;AUTOMATIC&quot; or
+					&quot;MANUAL&quot;
+					</description>
 				</option>
 				<option long-flag="ep" argument="file">
 					<description>
@@ -156,7 +164,11 @@
 					<description>Measure the time spent in a single relocation</description>
 				</option>
 				<option long-flag="repeated-relocations" argument="arg">
-					<description>improve measurement of relocation time by running each relocation multiple times. Specify the number of relocations, e.g. 100.</description>
+					<description>
+					Improve measurement of relocation time by running each
+					relocation multiple times. Specify the number of relocations,
+					e.g. 100.
+					</description>
 				</option>
 			</group>
 		</command-line>

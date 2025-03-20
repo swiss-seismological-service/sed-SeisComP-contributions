@@ -33,8 +33,6 @@
 
 
 #include <iostream>
-#include <iomanip>
-
 
 using namespace std;
 using namespace Seiscomp;
@@ -70,25 +68,48 @@ class Reloc : public Client::Application {
 	protected:
 		void createCommandLineDescription() override {
 			commandline().addGroup("Mode");
-			commandline().addOption("Mode", "test", "test mode, do not send any message");
-			commandline().addOption("Mode", "dump", "dump processed origins as XML to stdout");
+			commandline().addOption("Mode", "test",
+			                        "Test mode, do not send any message.");
+			commandline().addOption("Mode", "dump",
+			                        "Dump processed origins as XML to stdout.");
 			commandline().addGroup("Input");
-			commandline().addOption("Input", "origin-id,O", "reprocess the origin and send a message", &_originIDs);
-			commandline().addOption("Input", "locator", "the locator type to use", &_locatorType, false);
-			commandline().addOption("Input", "profile", "the locator profile to use", &_locatorProfile, false);
-			commandline().addOption("Input", "use-weight", "use current picks weight", &_useWeight, true);
-			commandline().addOption("Input", "ep", "Event parameters XML file for offline processing of all contained origins. "
-			                                       "This option should not be mixed with --dump.", &_epFile);
-			commandline().addOption("Input", "replace", "Used in combination with --ep and defines if origins are to be replaced "
-			                                            "by their relocated counterparts or just added to the output.");
-			commandline().addOption("Input", "drop-failure", "Used in combination with --replace/--ep and drops from the output "
-			                                            "the origins for which the relocation failed.");
+			commandline().addOption("Input", "origin-id,O",
+			                        "Reprocess the origin and send a message.",
+			                        &_originIDs);
+			commandline().addOption("Input", "locator",
+			                        "The locator type to use.", &_locatorType, false);
+			commandline().addOption("Input", "profile",
+			                        "The locator profile to use.", &_locatorProfile, false);
+			commandline().addOption("Input", "use-weight",
+			                        "Use current picks weight.", &_useWeight, true);
+			commandline().addOption("Input", "ep",
+			                        "Event parameters XML file for offline "
+			                        "processing of all contained origins. This "
+			                        "option should not be mixed with --dump.",
+			                        &_epFile);
+			commandline().addOption("Input", "replace",
+			                        "Used in combination with --ep and defines "
+			                        "if origins are to be replaced by their "
+			                        "relocated counterparts or just added to the output.");
+			commandline().addOption("Input", "drop-failure",
+			                        "Used in combination with --replace/--ep "
+			                        "and drops from the output the origins for "
+			                        "which the relocation failed.");
 			commandline().addGroup("Output");
-			commandline().addOption("Output", "origin-id-suffix", "create origin ID from that of the input origin plus the specfied suffix", &_originIDSuffix);
-			commandline().addOption("Output", "evaluation-mode", "evaluation mode of the new origin (AUTOMATIC or MANUAL)", &_originEvaluationMode, true);
+			commandline().addOption("Output", "origin-id-suffix",
+			                        "Create origin ID from that of the input "
+			                        "origin plus the specfied suffix.",
+			                        &_originIDSuffix);
+			commandline().addOption("Output", "evaluation-mode",
+			                        "Evaluation mode of the new origin (AUTOMATIC or MANUAL).",
+			                        &_originEvaluationMode, true);
 			commandline().addGroup("Profiling");
-			commandline().addOption("Profiling", "measure-relocation-time", "measure and log the time it takes to run each relocation");
-			commandline().addOption("Profiling", "repeated-relocations", "improve measurement of relocation time by running each relocation multiple times", &_repeatedRelocationCount);
+			commandline().addOption("Profiling", "measure-relocation-time",
+			                        "Measure and log the time it takes to run each relocation.");
+			commandline().addOption("Profiling", "repeated-relocations",
+			                        "Improve measurement of relocation time by "
+			                        "running each relocation multiple times.",
+			                        &_repeatedRelocationCount);
 		}
 
 
@@ -281,17 +302,18 @@ class Reloc : public Client::Application {
 						relocated = true;
 					}
 					catch ( std::exception &e ) {
-						SEISCOMP_ERROR("  + processing failed - %s", e.what());
+						SEISCOMP_ERROR("Failed processing origin %s - %s",
+						               publicID.c_str(), e.what());
 						relocated = false;
 					}
 					if ( !org ) { // safety belt, but it should not happen
-						SEISCOMP_ERROR("  + processing failed %s", publicID.c_str());
+						SEISCOMP_ERROR("Failed processing origin %s", publicID.c_str());
 						relocated = false;
 					}
 					else if ( _ignoreRejected ) {
 						try {
 							if ( org->evaluationStatus() == REJECTED ) {
-								SEISCOMP_DEBUG("  + Origin status is REJECTED, drop relocation "
+								SEISCOMP_DEBUG("  + evaluation status is REJECTED, drop relocation "
 								               "of origin %s", publicID.c_str());
 								relocated = false;
 							}
@@ -323,7 +345,7 @@ class Reloc : public Client::Application {
 						SEISCOMP_INFO("  + processed %d origins", processed+1);
 					}
 				}
- 				SEISCOMP_INFO("  + processed %d origins, successfully relocated %d",
+ 				SEISCOMP_INFO("Origins processed / sucessfully relocated: %d / %d",
 				              processed, numRelocated);
 
 				ar.create("-");
@@ -390,20 +412,35 @@ class Reloc : public Client::Application {
 
 
 	protected:
-		void handleMessage(Core::Message* msg) {
+		void handleMessage(Core::Message* msg) override {
 			Application::handleMessage(msg);
 
 			DataMessage *dm = DataMessage::Cast(msg);
-			if ( dm == NULL ) return;
+			if ( dm == NULL ) {
+				return;
+			}
 
 			for ( DataMessage::iterator it = dm->begin(); it != dm->end(); ++it ) {
 				Origin *org = Origin::Cast(it->get());
-				if ( org )
+				if ( org ) {
 					addObject("", org);
+				}
 			}
 		}
 
-		void addObject(const std::string &parentID, Object *obj) {
+		void printUsage() const override {
+			cout << "Usage:"  << endl << "  " << name() << " [options]" << endl << endl
+			     << "Relocate origins" << endl;
+
+			Client::Application::printUsage();
+
+			cout << "Examples:" << endl;
+			cout << "Offline processing of all origins stored in XML file" << endl
+			     << "  " << name() << " -d localhost --ep origins.xml"
+			     << endl << endl;
+		}
+
+		void addObject(const std::string &parentID, Object *obj) override {
 			Pick *pick = Pick::Cast(obj);
 			if ( pick ) {
 				_cache.feed(pick);
@@ -486,8 +523,9 @@ class Reloc : public Client::Application {
 
 	private:
 		OriginPtr process(Origin *org) {
-			if ( org->arrivalCount() == 0 )
+			if ( org->arrivalCount() == 0 ) {
 				query()->loadArrivals(org);
+			}
 
 			LocatorInterface::PickList picks;
 
@@ -496,7 +534,9 @@ class Reloc : public Client::Application {
 			for ( size_t i = 0; i < org->arrivalCount(); ++i ) {
 				Arrival *ar = org->arrival(i);
 				PickPtr pick = _cache.get<Pick>(ar->pickID());
-				if ( !pick ) continue;
+				if ( !pick ) {
+					continue;
+				}
 
 				if ( !_useWeight ) {
 					// Set weight to 1
@@ -529,8 +569,9 @@ class Reloc : public Client::Application {
 			Seiscomp::Util::StopWatch timer;
 			timer.restart();
 
-			for (size_t i=0; i<_repeatedRelocationCount; i++)
+			for (size_t i=0; i<_repeatedRelocationCount; i++) {
 				newOrg = _locator->relocate(org);
+			}
 			double seconds = (double) timer.elapsed() / _repeatedRelocationCount;
 
 			if ( newOrg ) {
@@ -592,11 +633,15 @@ class Reloc : public Client::Application {
 
 
 		bool send(Origin *org) {
-			if ( org == NULL ) return false;
+			if ( !org ) {
+				return false;
+			}
 
 			logObject(_outputOrgs, Core::Time::UTC());
 
-			if ( commandline().hasOption("test") ) return true;
+			if ( commandline().hasOption("test") ) {
+				return true;
+			}
 
 			EventParametersPtr ep = new EventParameters;
 
@@ -609,8 +654,9 @@ class Reloc : public Client::Application {
 			NotifierMessagePtr msg = Notifier::GetMessage();
 
 			bool result = false;
-			if ( connection() )
+			if ( connection() ) {
 				result = connection()->send(msg.get());
+			}
 
 			Notifier::SetEnabled(wasEnabled);
 
