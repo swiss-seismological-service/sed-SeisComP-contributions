@@ -31,7 +31,6 @@
 #include <seiscomp/seismology/locatorinterface.h>
 #include <seiscomp/io/archive/xmlarchive.h>
 
-
 #include <iostream>
 
 using namespace std;
@@ -82,6 +81,15 @@ class Reloc : public Client::Application {
 			                        "The locator profile to use.", &_locatorProfile, false);
 			commandline().addOption("Input", "use-weight",
 			                        "Use current picks weight.", &_useWeight, true);
+			commandline().addOption("Input", "streams-set-unused",
+			                        "List of streams from which picks are set "
+			                        "to unsed by their referencing arrivals "
+			                        "before locating. The concerned arrivals "
+			                        "are kept but the picks will not be used "
+			                        "for locating. Streams take the format "
+			                        "NET.STA.LOC.CHA. Wildcards * and ? are "
+			                        "supported.",
+			                        &_pickStreamsSetUnused);
 			commandline().addOption("Input", "ep",
 			                        "Event parameters XML file for offline "
 			                        "processing of all contained origins. This "
@@ -158,6 +166,9 @@ class Reloc : public Client::Application {
 			try { _storeSourceOriginID = configGetBool("reloc.storeSourceOriginID"); }
 			catch ( ... ) {}
 
+			try { _pickStreamsSetUnused = configGetStrings("picks.streamsSetUnused"); }
+			catch ( ... ) {}
+
 			return true;
 		}
 
@@ -218,6 +229,12 @@ class Reloc : public Client::Application {
 			SEISCOMP_DEBUG("  + allowAnyStatus: %s", _allowAnyStatus?"True":"False");
 			SEISCOMP_DEBUG("  + allowPreliminaryOrigins: %s", _allowPreliminary?"True":"False");
 			SEISCOMP_DEBUG("  + allowManualOrigins: %s", _allowManual?"True":"False");
+			if ( !_pickStreamsSetUnused.empty() ) {
+				SEISCOMP_DEBUG("  + streams set unused: %s", _pickStreamsSetUnused.back().c_str());
+			}
+			else {
+				SEISCOMP_DEBUG("  + streams set unused: none");
+			}
 			SEISCOMP_DEBUG("  + useWeight: %s", _useWeight?"True":"False");
 			SEISCOMP_DEBUG("  + adoptFixedDepth: %s", _adoptFixedDepth?"True":"False");
 			SEISCOMP_DEBUG("  + evaluation mode of relocated origins: %s", _originEvaluationMode.c_str());
@@ -538,7 +555,26 @@ class Reloc : public Client::Application {
 					continue;
 				}
 
-				if ( !_useWeight ) {
+				// filter streams by whitelist
+				bool useStream = true;
+				string streamID = pick->waveformID().networkCode()
+				                  + "." + pick->waveformID().stationCode()
+				                  + "." + pick->waveformID().locationCode()
+				                  + "." + pick->waveformID().channelCode();
+				for ( const auto &stream : _pickStreamsSetUnused ) {
+					if ( Core::wildcmp(stream, streamID) ) {
+						SEISCOMP_DEBUG("  + ignoring pick %s on stream %s",
+						               pick->publicID().c_str(), streamID);
+						ar->setWeight(0.0);
+						ar->setTimeUsed(false);
+						ar->setBackazimuthUsed(false);
+						ar->setHorizontalSlownessUsed(false);
+						useStream = false;
+						break;
+					}
+				}
+
+				if ( useStream && !_useWeight ) {
 					// Set weight to 1
 					ar->setWeight(1.0);
 					ar->setTimeUsed(true);
@@ -683,6 +719,7 @@ class Reloc : public Client::Application {
 		std::string                _originEvaluationMode;
 		std::string                _epFile;
 		size_t                     _repeatedRelocationCount;
+		std::vector<std::string>   _pickStreamsSetUnused;
 };
 
 

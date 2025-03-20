@@ -72,6 +72,25 @@
 					</description>
 				</parameter>
 			</group>
+			<group name="picks">
+				<description>
+				Parameters specific to picks.
+				</description>
+				<parameter name="streamsSetUnused" type="list:string" default="">
+					<description>
+					List of streams from which picks are set to unsed by their
+					referencing arrivals before locating. The concerned arrivals
+					are kept but the picks will not be used for locating.
+					Streams take the format NET.STA.LOC.CHA. Wildcards * and ?
+					are supported.
+
+					Example:
+
+					GE.MOX.*.HH? : All arrivals on any HH stream of station MOX
+					will be kept but not used for locating.
+					</description>
+				</parameter>
+			</group>
 		</configuration>
 		<command-line>
 			<group name="Generic">
@@ -135,6 +154,8 @@
 				</option>
 				<option long-flag="use-weight" argument="arg" default="0">
 					<description>Use current picks weight.</description>
+				</option>
+				<option long-flag="streams-set-unused" param-ref="picks.streamsSetUnused" argument="arg" type="list:string">
 				</option>
 				<option long-flag="evaluation-mode" argument="arg">
 					<description>
