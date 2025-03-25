@@ -643,7 +643,7 @@ class EventRecordReference(seiscomp.datamodel.Object):
         __init__(EventRecordReference self) -> EventRecordReference
         __init__(EventRecordReference self, EventRecordReference other) -> EventRecordReference
         __init__(EventRecordReference self, std::string const & recordID) -> EventRecordReference
-        __init__(EventRecordReference self, std::string const & recordID, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & campbellDistance, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & ruptureToStationAzimuth, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & ruptureAreaDistance, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & JoynerBooreDistance, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & closestFaultDistance, Seiscomp::Core::Optional< double >::Impl const & preEventLength, Seiscomp::Core::Optional< double >::Impl const & postEventLength) -> EventRecordReference
+        __init__(EventRecordReference self, std::string const & recordID, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & campbellDistance, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & ruptureToStationAzimuth, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & ruptureAreaDistance, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & JoynerBooreDistance, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & closestFaultDistance, Seiscomp::Core::Optional< double > const & preEventLength, Seiscomp::Core::Optional< double > const & postEventLength) -> EventRecordReference
         """
         _strongmotion.EventRecordReference_swiginit(self, _strongmotion.new_EventRecordReference(*args))
     __swig_destroy__ = _strongmotion.delete_EventRecordReference
@@ -669,7 +669,7 @@ class EventRecordReference(seiscomp.datamodel.Object):
         return _strongmotion.EventRecordReference_recordID(self)
 
     def setCampbellDistance(self, campbellDistance):
-        r"""setCampbellDistance(EventRecordReference self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & campbellDistance)"""
+        r"""setCampbellDistance(EventRecordReference self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & campbellDistance)"""
         return _strongmotion.EventRecordReference_setCampbellDistance(self, campbellDistance)
 
     def campbellDistance(self, *args):
@@ -680,7 +680,7 @@ class EventRecordReference(seiscomp.datamodel.Object):
         return _strongmotion.EventRecordReference_campbellDistance(self, *args)
 
     def setRuptureToStationAzimuth(self, ruptureToStationAzimuth):
-        r"""setRuptureToStationAzimuth(EventRecordReference self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & ruptureToStationAzimuth)"""
+        r"""setRuptureToStationAzimuth(EventRecordReference self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & ruptureToStationAzimuth)"""
         return _strongmotion.EventRecordReference_setRuptureToStationAzimuth(self, ruptureToStationAzimuth)
 
     def ruptureToStationAzimuth(self, *args):
@@ -691,7 +691,7 @@ class EventRecordReference(seiscomp.datamodel.Object):
         return _strongmotion.EventRecordReference_ruptureToStationAzimuth(self, *args)
 
     def setRuptureAreaDistance(self, ruptureAreaDistance):
-        r"""setRuptureAreaDistance(EventRecordReference self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & ruptureAreaDistance)"""
+        r"""setRuptureAreaDistance(EventRecordReference self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & ruptureAreaDistance)"""
         return _strongmotion.EventRecordReference_setRuptureAreaDistance(self, ruptureAreaDistance)
 
     def ruptureAreaDistance(self, *args):
@@ -702,7 +702,7 @@ class EventRecordReference(seiscomp.datamodel.Object):
         return _strongmotion.EventRecordReference_ruptureAreaDistance(self, *args)
 
     def setJoynerBooreDistance(self, JoynerBooreDistance):
-        r"""setJoynerBooreDistance(EventRecordReference self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & JoynerBooreDistance)"""
+        r"""setJoynerBooreDistance(EventRecordReference self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & JoynerBooreDistance)"""
         return _strongmotion.EventRecordReference_setJoynerBooreDistance(self, JoynerBooreDistance)
 
     def JoynerBooreDistance(self, *args):
@@ -713,7 +713,7 @@ class EventRecordReference(seiscomp.datamodel.Object):
         return _strongmotion.EventRecordReference_JoynerBooreDistance(self, *args)
 
     def setClosestFaultDistance(self, closestFaultDistance):
-        r"""setClosestFaultDistance(EventRecordReference self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & closestFaultDistance)"""
+        r"""setClosestFaultDistance(EventRecordReference self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & closestFaultDistance)"""
         return _strongmotion.EventRecordReference_setClosestFaultDistance(self, closestFaultDistance)
 
     def closestFaultDistance(self, *args):
@@ -724,7 +724,7 @@ class EventRecordReference(seiscomp.datamodel.Object):
         return _strongmotion.EventRecordReference_closestFaultDistance(self, *args)
 
     def setPreEventLength(self, preEventLength):
-        r"""setPreEventLength(EventRecordReference self, Seiscomp::Core::Optional< double >::Impl const & preEventLength)"""
+        r"""setPreEventLength(EventRecordReference self, Seiscomp::Core::Optional< double > const & preEventLength)"""
         return _strongmotion.EventRecordReference_setPreEventLength(self, preEventLength)
 
     def preEventLength(self):
@@ -732,7 +732,7 @@ class EventRecordReference(seiscomp.datamodel.Object):
         return _strongmotion.EventRecordReference_preEventLength(self)
 
     def setPostEventLength(self, postEventLength):
-        r"""setPostEventLength(EventRecordReference self, Seiscomp::Core::Optional< double >::Impl const & postEventLength)"""
+        r"""setPostEventLength(EventRecordReference self, Seiscomp::Core::Optional< double > const & postEventLength)"""
         return _strongmotion.EventRecordReference_setPostEventLength(self, postEventLength)
 
     def postEventLength(self):
@@ -843,7 +843,7 @@ class FileResource(seiscomp.core.BaseObject):
         return _strongmotion.FileResource_equal(self, other)
 
     def setCreationInfo(self, creationInfo):
-        r"""setCreationInfo(FileResource self, Seiscomp::Core::Optional< Seiscomp::DataModel::CreationInfo >::Impl const & creationInfo)"""
+        r"""setCreationInfo(FileResource self, Seiscomp::Core::Optional< Seiscomp::DataModel::CreationInfo > const & creationInfo)"""
         return _strongmotion.FileResource_setCreationInfo(self, creationInfo)
 
     def creationInfo(self, *args):
@@ -1075,7 +1075,7 @@ class LiteratureSource(seiscomp.core.BaseObject):
         __init__(LiteratureSource self) -> LiteratureSource
         __init__(LiteratureSource self, LiteratureSource other) -> LiteratureSource
         __init__(LiteratureSource self, std::string const & title) -> LiteratureSource
-        __init__(LiteratureSource self, std::string const & title, std::string const & firstAuthorName, std::string const & firstAuthorForename, std::string const & secondaryAuthors, std::string const & doi, Seiscomp::Core::Optional< int >::Impl const & year, std::string const & in_title, std::string const & editor, std::string const & place, std::string const & language, Seiscomp::Core::Optional< int >::Impl const & tome, Seiscomp::Core::Optional< int >::Impl const & page_from, Seiscomp::Core::Optional< int >::Impl const & page_to) -> LiteratureSource
+        __init__(LiteratureSource self, std::string const & title, std::string const & firstAuthorName, std::string const & firstAuthorForename, std::string const & secondaryAuthors, std::string const & doi, Seiscomp::Core::Optional< int > const & year, std::string const & in_title, std::string const & editor, std::string const & place, std::string const & language, Seiscomp::Core::Optional< int > const & tome, Seiscomp::Core::Optional< int > const & page_from, Seiscomp::Core::Optional< int > const & page_to) -> LiteratureSource
         """
         _strongmotion.LiteratureSource_swiginit(self, _strongmotion.new_LiteratureSource(*args))
     __swig_destroy__ = _strongmotion.delete_LiteratureSource
@@ -1133,7 +1133,7 @@ class LiteratureSource(seiscomp.core.BaseObject):
         return _strongmotion.LiteratureSource_doi(self)
 
     def setYear(self, year):
-        r"""setYear(LiteratureSource self, Seiscomp::Core::Optional< int >::Impl const & year)"""
+        r"""setYear(LiteratureSource self, Seiscomp::Core::Optional< int > const & year)"""
         return _strongmotion.LiteratureSource_setYear(self, year)
 
     def year(self):
@@ -1173,7 +1173,7 @@ class LiteratureSource(seiscomp.core.BaseObject):
         return _strongmotion.LiteratureSource_language(self)
 
     def setTome(self, tome):
-        r"""setTome(LiteratureSource self, Seiscomp::Core::Optional< int >::Impl const & tome)"""
+        r"""setTome(LiteratureSource self, Seiscomp::Core::Optional< int > const & tome)"""
         return _strongmotion.LiteratureSource_setTome(self, tome)
 
     def tome(self):
@@ -1181,7 +1181,7 @@ class LiteratureSource(seiscomp.core.BaseObject):
         return _strongmotion.LiteratureSource_tome(self)
 
     def setPageFrom(self, pageFrom):
-        r"""setPageFrom(LiteratureSource self, Seiscomp::Core::Optional< int >::Impl const & pageFrom)"""
+        r"""setPageFrom(LiteratureSource self, Seiscomp::Core::Optional< int > const & pageFrom)"""
         return _strongmotion.LiteratureSource_setPageFrom(self, pageFrom)
 
     def pageFrom(self):
@@ -1189,7 +1189,7 @@ class LiteratureSource(seiscomp.core.BaseObject):
         return _strongmotion.LiteratureSource_pageFrom(self)
 
     def setPageTo(self, pageTo):
-        r"""setPageTo(LiteratureSource self, Seiscomp::Core::Optional< int >::Impl const & pageTo)"""
+        r"""setPageTo(LiteratureSource self, Seiscomp::Core::Optional< int > const & pageTo)"""
         return _strongmotion.LiteratureSource_setPageTo(self, pageTo)
 
     def pageTo(self):
@@ -1288,7 +1288,7 @@ class SurfaceRupture(seiscomp.core.BaseObject):
         return _strongmotion.SurfaceRupture_evidence(self)
 
     def setLiteratureSource(self, literatureSource):
-        r"""setLiteratureSource(SurfaceRupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::StrongMotion::LiteratureSource >::Impl const & literatureSource)"""
+        r"""setLiteratureSource(SurfaceRupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::StrongMotion::LiteratureSource > const & literatureSource)"""
         return _strongmotion.SurfaceRupture_setLiteratureSource(self, literatureSource)
 
     def literatureSource(self, *args):
@@ -1393,7 +1393,7 @@ class PeakMotion(seiscomp.datamodel.Object):
         return _strongmotion.PeakMotion_type(self)
 
     def setPeriod(self, period):
-        r"""setPeriod(PeakMotion self, Seiscomp::Core::Optional< double >::Impl const & period)"""
+        r"""setPeriod(PeakMotion self, Seiscomp::Core::Optional< double > const & period)"""
         return _strongmotion.PeakMotion_setPeriod(self, period)
 
     def period(self):
@@ -1401,7 +1401,7 @@ class PeakMotion(seiscomp.datamodel.Object):
         return _strongmotion.PeakMotion_period(self)
 
     def setDamping(self, damping):
-        r"""setDamping(PeakMotion self, Seiscomp::Core::Optional< double >::Impl const & damping)"""
+        r"""setDamping(PeakMotion self, Seiscomp::Core::Optional< double > const & damping)"""
         return _strongmotion.PeakMotion_setDamping(self, damping)
 
     def damping(self):
@@ -1417,7 +1417,7 @@ class PeakMotion(seiscomp.datamodel.Object):
         return _strongmotion.PeakMotion_method(self)
 
     def setAtTime(self, atTime):
-        r"""setAtTime(PeakMotion self, Seiscomp::Core::Optional< Seiscomp::DataModel::TimeQuantity >::Impl const & atTime)"""
+        r"""setAtTime(PeakMotion self, Seiscomp::Core::Optional< Seiscomp::DataModel::TimeQuantity > const & atTime)"""
         return _strongmotion.PeakMotion_setAtTime(self, atTime)
 
     def atTime(self, *args):
@@ -1544,7 +1544,7 @@ class Record(seiscomp.datamodel.PublicObject):
         return _strongmotion.Record_equal(self, other)
 
     def setCreationInfo(self, creationInfo):
-        r"""setCreationInfo(Record self, Seiscomp::Core::Optional< Seiscomp::DataModel::CreationInfo >::Impl const & creationInfo)"""
+        r"""setCreationInfo(Record self, Seiscomp::Core::Optional< Seiscomp::DataModel::CreationInfo > const & creationInfo)"""
         return _strongmotion.Record_setCreationInfo(self, creationInfo)
 
     def creationInfo(self, *args):
@@ -1563,7 +1563,7 @@ class Record(seiscomp.datamodel.PublicObject):
         return _strongmotion.Record_gainUnit(self)
 
     def setDuration(self, duration):
-        r"""setDuration(Record self, Seiscomp::Core::Optional< double >::Impl const & duration)"""
+        r"""setDuration(Record self, Seiscomp::Core::Optional< double > const & duration)"""
         return _strongmotion.Record_setDuration(self, duration)
 
     def duration(self):
@@ -1582,7 +1582,7 @@ class Record(seiscomp.datamodel.PublicObject):
         return _strongmotion.Record_startTime(self, *args)
 
     def setOwner(self, owner):
-        r"""setOwner(Record self, Seiscomp::Core::Optional< Seiscomp::DataModel::StrongMotion::Contact >::Impl const & owner)"""
+        r"""setOwner(Record self, Seiscomp::Core::Optional< Seiscomp::DataModel::StrongMotion::Contact > const & owner)"""
         return _strongmotion.Record_setOwner(self, owner)
 
     def owner(self, *args):
@@ -1593,7 +1593,7 @@ class Record(seiscomp.datamodel.PublicObject):
         return _strongmotion.Record_owner(self, *args)
 
     def setResampleRateNumerator(self, resampleRateNumerator):
-        r"""setResampleRateNumerator(Record self, Seiscomp::Core::Optional< int >::Impl const & resampleRateNumerator)"""
+        r"""setResampleRateNumerator(Record self, Seiscomp::Core::Optional< int > const & resampleRateNumerator)"""
         return _strongmotion.Record_setResampleRateNumerator(self, resampleRateNumerator)
 
     def resampleRateNumerator(self):
@@ -1601,7 +1601,7 @@ class Record(seiscomp.datamodel.PublicObject):
         return _strongmotion.Record_resampleRateNumerator(self)
 
     def setResampleRateDenominator(self, resampleRateDenominator):
-        r"""setResampleRateDenominator(Record self, Seiscomp::Core::Optional< int >::Impl const & resampleRateDenominator)"""
+        r"""setResampleRateDenominator(Record self, Seiscomp::Core::Optional< int > const & resampleRateDenominator)"""
         return _strongmotion.Record_setResampleRateDenominator(self, resampleRateDenominator)
 
     def resampleRateDenominator(self):
@@ -1620,7 +1620,7 @@ class Record(seiscomp.datamodel.PublicObject):
         return _strongmotion.Record_waveformID(self, *args)
 
     def setWaveformFile(self, waveformFile):
-        r"""setWaveformFile(Record self, Seiscomp::Core::Optional< Seiscomp::DataModel::StrongMotion::FileResource >::Impl const & waveformFile)"""
+        r"""setWaveformFile(Record self, Seiscomp::Core::Optional< Seiscomp::DataModel::StrongMotion::FileResource > const & waveformFile)"""
         return _strongmotion.Record_setWaveformFile(self, waveformFile)
 
     def waveformFile(self, *args):
@@ -1799,7 +1799,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_equal(self, other)
 
     def setWidth(self, width):
-        r"""setWidth(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & width)"""
+        r"""setWidth(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & width)"""
         return _strongmotion.Rupture_setWidth(self, width)
 
     def width(self, *args):
@@ -1810,7 +1810,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_width(self, *args)
 
     def setDisplacement(self, displacement):
-        r"""setDisplacement(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & displacement)"""
+        r"""setDisplacement(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & displacement)"""
         return _strongmotion.Rupture_setDisplacement(self, displacement)
 
     def displacement(self, *args):
@@ -1821,7 +1821,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_displacement(self, *args)
 
     def setRiseTime(self, riseTime):
-        r"""setRiseTime(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & riseTime)"""
+        r"""setRiseTime(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & riseTime)"""
         return _strongmotion.Rupture_setRiseTime(self, riseTime)
 
     def riseTime(self, *args):
@@ -1832,7 +1832,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_riseTime(self, *args)
 
     def setVtToVs(self, vtToVs):
-        r"""setVtToVs(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & vtToVs)"""
+        r"""setVtToVs(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & vtToVs)"""
         return _strongmotion.Rupture_setVtToVs(self, vtToVs)
 
     def vtToVs(self, *args):
@@ -1843,7 +1843,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_vtToVs(self, *args)
 
     def setShallowAsperityDepth(self, shallowAsperityDepth):
-        r"""setShallowAsperityDepth(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & shallowAsperityDepth)"""
+        r"""setShallowAsperityDepth(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & shallowAsperityDepth)"""
         return _strongmotion.Rupture_setShallowAsperityDepth(self, shallowAsperityDepth)
 
     def shallowAsperityDepth(self, *args):
@@ -1854,7 +1854,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_shallowAsperityDepth(self, *args)
 
     def setShallowAsperity(self, shallowAsperity):
-        r"""setShallowAsperity(Rupture self, Seiscomp::Core::Optional< bool >::Impl const & shallowAsperity)"""
+        r"""setShallowAsperity(Rupture self, Seiscomp::Core::Optional< bool > const & shallowAsperity)"""
         return _strongmotion.Rupture_setShallowAsperity(self, shallowAsperity)
 
     def shallowAsperity(self):
@@ -1862,7 +1862,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_shallowAsperity(self)
 
     def setLiteratureSource(self, literatureSource):
-        r"""setLiteratureSource(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::StrongMotion::LiteratureSource >::Impl const & literatureSource)"""
+        r"""setLiteratureSource(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::StrongMotion::LiteratureSource > const & literatureSource)"""
         return _strongmotion.Rupture_setLiteratureSource(self, literatureSource)
 
     def literatureSource(self, *args):
@@ -1873,7 +1873,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_literatureSource(self, *args)
 
     def setSlipVelocity(self, slipVelocity):
-        r"""setSlipVelocity(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & slipVelocity)"""
+        r"""setSlipVelocity(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & slipVelocity)"""
         return _strongmotion.Rupture_setSlipVelocity(self, slipVelocity)
 
     def slipVelocity(self, *args):
@@ -1884,7 +1884,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_slipVelocity(self, *args)
 
     def setStrike(self, strike):
-        r"""setStrike(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & strike)"""
+        r"""setStrike(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & strike)"""
         return _strongmotion.Rupture_setStrike(self, strike)
 
     def strike(self, *args):
@@ -1895,7 +1895,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_strike(self, *args)
 
     def setLength(self, length):
-        r"""setLength(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & length)"""
+        r"""setLength(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & length)"""
         return _strongmotion.Rupture_setLength(self, length)
 
     def length(self, *args):
@@ -1906,7 +1906,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_length(self, *args)
 
     def setArea(self, area):
-        r"""setArea(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & area)"""
+        r"""setArea(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & area)"""
         return _strongmotion.Rupture_setArea(self, area)
 
     def area(self, *args):
@@ -1917,7 +1917,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_area(self, *args)
 
     def setRuptureVelocity(self, ruptureVelocity):
-        r"""setRuptureVelocity(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & ruptureVelocity)"""
+        r"""setRuptureVelocity(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & ruptureVelocity)"""
         return _strongmotion.Rupture_setRuptureVelocity(self, ruptureVelocity)
 
     def ruptureVelocity(self, *args):
@@ -1928,7 +1928,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_ruptureVelocity(self, *args)
 
     def setStressdrop(self, stressdrop):
-        r"""setStressdrop(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & stressdrop)"""
+        r"""setStressdrop(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & stressdrop)"""
         return _strongmotion.Rupture_setStressdrop(self, stressdrop)
 
     def stressdrop(self, *args):
@@ -1939,7 +1939,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_stressdrop(self, *args)
 
     def setMomentReleaseTop5km(self, momentReleaseTop5km):
-        r"""setMomentReleaseTop5km(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity >::Impl const & momentReleaseTop5km)"""
+        r"""setMomentReleaseTop5km(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::RealQuantity > const & momentReleaseTop5km)"""
         return _strongmotion.Rupture_setMomentReleaseTop5km(self, momentReleaseTop5km)
 
     def momentReleaseTop5km(self, *args):
@@ -1950,7 +1950,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_momentReleaseTop5km(self, *args)
 
     def setFwHwIndicator(self, fwHwIndicator):
-        r"""setFwHwIndicator(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::StrongMotion::FwHwIndicator >::Impl const & fwHwIndicator)"""
+        r"""setFwHwIndicator(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::StrongMotion::FwHwIndicator > const & fwHwIndicator)"""
         return _strongmotion.Rupture_setFwHwIndicator(self, fwHwIndicator)
 
     def fwHwIndicator(self):
@@ -1974,7 +1974,7 @@ class Rupture(seiscomp.datamodel.PublicObject):
         return _strongmotion.Rupture_faultID(self)
 
     def setSurfaceRupture(self, surfaceRupture):
-        r"""setSurfaceRupture(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::StrongMotion::SurfaceRupture >::Impl const & surfaceRupture)"""
+        r"""setSurfaceRupture(Rupture self, Seiscomp::Core::Optional< Seiscomp::DataModel::StrongMotion::SurfaceRupture > const & surfaceRupture)"""
         return _strongmotion.Rupture_setSurfaceRupture(self, surfaceRupture)
 
     def surfaceRupture(self, *args):
@@ -2121,7 +2121,7 @@ class StrongOriginDescription(seiscomp.datamodel.PublicObject):
         return _strongmotion.StrongOriginDescription_originID(self)
 
     def setWaveformCount(self, waveformCount):
-        r"""setWaveformCount(StrongOriginDescription self, Seiscomp::Core::Optional< int >::Impl const & waveformCount)"""
+        r"""setWaveformCount(StrongOriginDescription self, Seiscomp::Core::Optional< int > const & waveformCount)"""
         return _strongmotion.StrongOriginDescription_setWaveformCount(self, waveformCount)
 
     def waveformCount(self):
@@ -2129,7 +2129,7 @@ class StrongOriginDescription(seiscomp.datamodel.PublicObject):
         return _strongmotion.StrongOriginDescription_waveformCount(self)
 
     def setCreationInfo(self, creationInfo):
-        r"""setCreationInfo(StrongOriginDescription self, Seiscomp::Core::Optional< Seiscomp::DataModel::CreationInfo >::Impl const & creationInfo)"""
+        r"""setCreationInfo(StrongOriginDescription self, Seiscomp::Core::Optional< Seiscomp::DataModel::CreationInfo > const & creationInfo)"""
         return _strongmotion.StrongOriginDescription_setCreationInfo(self, creationInfo)
 
     def creationInfo(self, *args):
