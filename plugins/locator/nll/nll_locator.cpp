@@ -845,10 +845,11 @@ Origin* NLLocator::locate(PickList &pickList) {
 	}
 
 	// Suppress physical NLL output it will be done later manually
-	if ( _enableSEDParameters )
-		params.push_back("LOCHYPOUT NONE CALC_SED_ORIGIN");
-	else
-		params.push_back("LOCHYPOUT NONE");
+	params.push_back(
+		std::string("LOCHYPOUT NONE")
+	  + (_enableSEDParameters ? " CALC_SED_ORIGIN"       : "")
+	  + (_saveExpectation     ? " SAVE_NLLOC_EXPECTATION" : "")
+	);
 
 	std::vector<char*> obs_buf, control_buf;
 
@@ -1282,6 +1283,13 @@ void NLLocator::updateProfile(const std::string &name) {
 				if ( line.empty() ) continue;
 				// ignore comments
 				if ( line[0] == '#' ) continue;
+
+				// if the line begins with LOCHYPOUT and 
+				// has SAVE_NLLOC_EXPECTATION, remember it
+				if ( line.rfind("LOCHYPOUT", 0) == 0
+				  && line.find("SAVE_NLLOC_EXPECTATION") != std::string::npos ) {
+					_saveExpectation = true;
+				}
 
 				size_t pos = line.find_first_of(" \t\r\n");
 				if ( pos != string::npos ) {
