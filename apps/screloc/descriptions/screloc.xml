@@ -135,6 +135,12 @@
 			</group>
 
 			<group name="Mode">
+				<option long-flag="dump">
+					<description>
+					Dump processed origins as XML to stdout. Use in combination
+					with -O.
+					</description>
+				</option>
 				<option long-flag="test">
 					<description>
 					Test mode, do not send any message.
@@ -143,32 +149,32 @@
 			</group>
 
 			<group name="Input">
+				<option long-flag="locator" argument="arg" param-ref="reloc.locator">
+				</option>
+				<option long-flag="profile" argument="arg" param-ref="reloc.profile">
+				</option>
+				<option long-flag="ep" argument="arg">
+					<description>
+					Event parameters XML file for offline processing of all
+					contained origins. This option should not be mixed with
+					--dump.
+					</description>
+				</option>
 				<option flag="O" long-flag="origin-id" argument="arg">
 					<description>
 					Reprocess the origin and send a message unless test mode is
 					activated.
 					</description>
 				</option>
-				<option long-flag="locator" argument="arg">
-					<description>The locator type to use.</description>
-				</option>
-				<option long-flag="use-weight" argument="arg" default="0">
-					<description>Use current picks weight.</description>
+				<option long-flag="use-weight"  param-ref="reloc.useWeight" default="0">
 				</option>
 				<option long-flag="streams-set-unused" param-ref="picks.streamsSetUnused" argument="arg" type="list:string">
-				</option>
-				<option long-flag="evaluation-mode" argument="arg">
 					<description>
-					Set origin evaluation mode: &quot;AUTOMATIC&quot; or
-					&quot;MANUAL&quot;
-					</description>
-				</option>
-				<option long-flag="ep" argument="file">
-					<description>
-					Defines an event parameters XML file to be read and processed. This
-					implies offline mode and only processes all origins contained
-					in that file. Each relocated origin is appended to the list
-					of origins unless --replace is given.
+					List of streams from which picks are set to unsed by their
+					referencing arrivals before locating. The concerned arrivals
+					are kept but the picks will not be used for locating.
+					Streams take the format NET.STA.LOC.CHA. Wildcards * and ?
+					are supported.
 					</description>
 				</option>
 				<option long-flag="replace">
@@ -180,9 +186,29 @@
 					</description>
 				</option>
 			</group>
+			<group name="Output">
+				<option long-flag="evaluation-mode">
+					<description>
+					Evaluation mode of the new origin (AUTOMATIC or MANUAL).
+					</description>
+				</option>
+				<option flag="f" long-flag="formatted">
+					<description>
+					Use formatted XML output. Otherwise XML is unformatted.
+					</description>
+				</option>
+				<option long-flag="origin-id-suffix">
+					<description>
+					Create origin ID from that of the input origin plus the
+					specfied suffix.
+					</description>
+				</option>
+			</group>
 			<group name="Profiling">
 				<option long-flag="measure-relocation-time">
-					<description>Measure the time spent in a single relocation</description>
+					<description>
+					Measure the time spent in a single relocation
+					</description>
 				</option>
 				<option long-flag="repeated-relocations" argument="arg">
 					<description>
