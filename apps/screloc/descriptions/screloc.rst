@@ -98,25 +98,37 @@ The following example configuration shows a setup of screloc for
 Examples
 ========
 
-* Run screloc to with a specific velocity model given in a profile by :ref:`NonLinLoc <global_nonlinloc>`.
-  Use a specific userID and authorID for uniquely recognizing the relocation.
-  Changing the priority in :ref:`scevent` before running the example, e.g. to
-  TIME_AUTOMATIC, sets the latest origin (which will be created by screloc) to preferred.
+* Relocate all origins given in an :term:`SCML` file according to the
+  configuration of :program:`screloc`. Write all output to unformatted SCML.
 
   .. code-block:: sh
 
-    # set specific velocity profile defined for NonLinLoc
-    profile=<your_profile>
-    # set userID
-    userID="<your_user>"
-    # set authorID
-    authorID="<screloc>"
+     screloc -d localhost --ep origins.xml > origins_screloc.xml
 
-    for i in `scevtls -d mysql://sysop:sysop@localhost/seiscomp --begin '2015-01-01 00:00:00' --end '2015-02-01 00:00:00'`; do
+* Relocate the previously preferred origins of all events (:ref:`scevtls`)
+  within some period of time using a specific :ref:`locator <concepts_locators>`
+  and locator profile.
+  Use some userID and authorID for uniquely recognizing the relocation.
+  Configuring the ref:`scevent` parameter :confval:`eventAssociation.priorities`
+  to TIME_AUTOMATIC before running the example will prefer the latest origin
+  (which will be created by screloc) for the event the new origin is associated
+  to. The new origins are automatically sent to the messaging.
 
-        orgID=`echo "select preferredOriginID from Event,PublicObject where Event._oid=PublicObject._oid and PublicObject.publicID='$i'" |\
-        mysql -u sysop -p sysop -D seiscomp -h localhost -N`
+  .. code-block:: sh
 
-        screloc -O $orgID -d localhost --locator NonLinLoc --profile $profile -u $userID --debug --author=$authorID
+    #!/bin/bash
 
+    # locator type
+    locator=[your_locator]
+    # locator profile
+    profile=[your_profile]
+    # set some userID
+    userID=[your_user]
+    # set some authorID
+    authorID=[screloc]
+
+    IFS=',' read -ra events <<< `scevtls -d localhost -p -D , --begin 2025-01-01 --end 2025-02-01`
+    for event in "${events[@]}"; do
+        preferredOrigin=$(echo $event | awk '{print $2}')
+        screloc -d localhost -O $preferredOrigin --locator $locator --profile $profile -u $userID --author=$authorID
     done

@@ -67,18 +67,25 @@ class Reloc : public Client::Application {
 	protected:
 		void createCommandLineDescription() override {
 			commandline().addGroup("Mode");
+			commandline().addOption("Mode", "dump",
+			                        "Dump processed origins as XML to stdout."
+			                        "Use in combination with -O");
 			commandline().addOption("Mode", "test",
 			                        "Test mode, do not send any message.");
-			commandline().addOption("Mode", "dump",
-			                        "Dump processed origins as XML to stdout.");
+
 			commandline().addGroup("Input");
-			commandline().addOption("Input", "origin-id,O",
-			                        "Reprocess the origin and send a message.",
-			                        &_originIDs);
 			commandline().addOption("Input", "locator",
 			                        "The locator type to use.", &_locatorType, false);
 			commandline().addOption("Input", "profile",
 			                        "The locator profile to use.", &_locatorProfile, false);
+			commandline().addOption("Input", "ep",
+			                        "Event parameters XML file for offline "
+			                        "processing of all contained origins. This "
+			                        "option should not be mixed with --dump.",
+			                        &_epFile);
+			commandline().addOption("Input", "origin-id,O",
+			                        "Reprocess the origin and send a message.",
+			                        &_originIDs);
 			commandline().addOption("Input", "use-weight",
 			                        "Use current picks weight.", &_useWeight, true);
 			commandline().addOption("Input", "streams-set-unused",
@@ -90,11 +97,6 @@ class Reloc : public Client::Application {
 			                        "NET.STA.LOC.CHA. Wildcards * and ? are "
 			                        "supported.",
 			                        &_pickStreamsSetUnused);
-			commandline().addOption("Input", "ep",
-			                        "Event parameters XML file for offline "
-			                        "processing of all contained origins. This "
-			                        "option should not be mixed with --dump.",
-			                        &_epFile);
 			commandline().addOption("Input", "replace",
 			                        "Used in combination with --ep and defines "
 			                        "if origins are to be replaced by their "
@@ -103,14 +105,19 @@ class Reloc : public Client::Application {
 			                        "Used in combination with --replace/--ep "
 			                        "and drops from the output the origins for "
 			                        "which the relocation failed.");
+
 			commandline().addGroup("Output");
+			commandline().addOption("Output", "evaluation-mode",
+			                        "Evaluation mode of the new origin (AUTOMATIC or MANUAL).",
+			                        &_originEvaluationMode, true);
+			commandline().addOption("Output", "formatted,f",
+			                        "Use formatted XML output. Otherwise XML "
+			                        "is unformatted.");
 			commandline().addOption("Output", "origin-id-suffix",
 			                        "Create origin ID from that of the input "
 			                        "origin plus the specfied suffix.",
 			                        &_originIDSuffix);
-			commandline().addOption("Output", "evaluation-mode",
-			                        "Evaluation mode of the new origin (AUTOMATIC or MANUAL).",
-			                        &_originEvaluationMode, true);
+
 			commandline().addGroup("Profiling");
 			commandline().addOption("Profiling", "measure-relocation-time",
 			                        "Measure and log the time it takes to run each relocation.");
@@ -366,7 +373,7 @@ class Reloc : public Client::Application {
 				              processed, numRelocated);
 
 				ar.create("-");
-				ar.setFormattedOutput(true);
+				ar.setFormattedOutput(commandline().hasOption("formatted"));
 				ar << ep;
 				ar.close();
 
@@ -658,7 +665,7 @@ class Reloc : public Client::Application {
 				}
 
 				IO::XMLArchive ar;
-				ar.setFormattedOutput(true);
+				ar.setFormattedOutput(commandline().hasOption("formatted"));
 				ar.create("-");
 				ar << ep;
 				ar.close();
