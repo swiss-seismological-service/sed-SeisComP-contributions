@@ -359,6 +359,7 @@ NLLocator::NLLocator() {
 	_fixedDepthGridSpacing = 0.1;
 	_allowMissingStations = true;
 	_enableSEDParameters = false;
+	_saveExpectation = false;
 	_enableNLLOutput = true;
 	_enableNLLSaveInput = true;
 
@@ -1289,6 +1290,7 @@ void NLLocator::updateProfile(const std::string &name) {
 				if ( line.rfind("LOCHYPOUT", 0) == 0
 				  && line.find("SAVE_NLLOC_EXPECTATION") != std::string::npos ) {
 					_saveExpectation = true;
+					SEISCOMP_DEBUG("Using expectation hypocenter");
 				}
 
 				size_t pos = line.find_first_of(" \t\r\n");
