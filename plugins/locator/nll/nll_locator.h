@@ -132,7 +132,6 @@ class NLLocator : public Seiscomp::Seismology::LocatorInterface {
 		bool          _enableSEDParameters;
 		bool          _enableNLLOutput;
 		bool          _enableNLLSaveInput;
-		bool          _saveExpectation;
 
 		ParameterMap  _parameters;
 		Profiles      _profiles;
