@@ -148,6 +148,7 @@ class WFParam : public Application {
 			double      durationScale;
 
 			std::vector<double> dampings;
+			std::vector<double> customPeriods;
 			std::string naturalPeriodsStr;
 			int         naturalPeriods;
 			bool        naturalPeriodsLog;

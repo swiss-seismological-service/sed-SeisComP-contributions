@@ -445,6 +445,15 @@ void PGAV::setResponseSpectrumParameters(const std::vector<double> &dampings,
 
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+void PGAV::setCustomPeriods(const std::vector<double> &periods) {
+	_config.customPeriods = periods;
+}
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 void PGAV::setAftershockRemovalEnabled(bool e) {
 	_config.aftershockRemoval = e;
 }
@@ -1372,42 +1381,48 @@ void PGAV::process(const Record *record, const DoubleArray &) {
 	vector<double> T;
 
 	if ( !_config.fixedPeriods ) {
-		// add basic vibration periods needed for Shakemaps
-		T.push_back(0.3);
-		T.push_back(1.0);
-		T.push_back(3.0);
+		if ( !_config.customPeriods.empty() ) {
+			T = _config.customPeriods;
+		}
+		else {
+			// add basic vibration periods needed for Shakemaps
+			T.push_back(0.3);
+			T.push_back(1.0);
+			T.push_back(3.0);
 
-		if ( _config.naturalPeriods > 1 ) {
-			int nT = _config.naturalPeriods-1;
+			if ( _config.naturalPeriods > 1 ) {
+				int nT = _config.naturalPeriods-1;
 
-			if ( _config.naturalPeriodsLog ) {
-				if ( _config.Tmin != 0.0 && _config.Tmax != 0.0 ) {
-					double logTmin = log10(_config.Tmin);
-					double logTmax = log10(_config.Tmax);
+				if ( _config.naturalPeriodsLog ) {
+					if ( _config.Tmin != 0.0 && _config.Tmax != 0.0 ) {
+						double logTmin = log10(_config.Tmin);
+						double logTmax = log10(_config.Tmax);
 
-					double dT = (logTmax-logTmin)/nT;
+						double dT = (logTmax-logTmin)/nT;
+						for ( int i = 0; i < nT; ++i ) {
+							double v = pow(10.0, logTmin+i*dT);
+							if ( v <= Tmax ) T.push_back(v);
+						}
+
+						if ( _config.Tmax <= Tmax ) T.push_back(_config.Tmax);
+					}
+					else
+						SEISCOMP_DEBUG(">  given natural periods ignored: log(0) is not defined");
+				}
+				else {
+					double dT = (_config.Tmax-_config.Tmin)/nT;
 					for ( int i = 0; i < nT; ++i ) {
-						double v = pow(10.0, logTmin+i*dT);
+						double v = _config.Tmin+i*dT;
 						if ( v <= Tmax ) T.push_back(v);
 					}
 
 					if ( _config.Tmax <= Tmax ) T.push_back(_config.Tmax);
 				}
-				else
-					SEISCOMP_DEBUG(">  given natural periods ignored: log(0) is not defined");
 			}
 			else {
-				double dT = (_config.Tmax-_config.Tmin)/nT;
-				for ( int i = 0; i < nT; ++i ) {
-					double v = _config.Tmin+i*dT;
-					if ( v <= Tmax ) T.push_back(v);
-				}
-
-				if ( _config.Tmax <= Tmax ) T.push_back(_config.Tmax);
+				T.push_back(_config.Tmin);
 			}
 		}
-		else
-			T.push_back(_config.Tmin);
 	}
 	else {
 		if ( _config.clipTmax ) {
