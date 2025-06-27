@@ -844,6 +844,45 @@ Origin* NLLocator::locate(PickList &pickList) {
 		}
 	}
 
+    // Deal with LOCHYPOUT options
+    // The plugin suppress physical NLL output (LOCHYPOUT NONE)
+    // but some supported flags can be used
+    bool seenLocHypOut = false;
+
+    for ( auto &line : _controlFile ) {
+        if ( line.rfind("LOCHYPOUT", 0) != 0 ) 
+            continue;
+
+        seenLocHypOut = true;
+        // detect supported flags
+        bool hasExpect = line.find("SAVE_NLLOC_EXPECTATION") != std::string::npos;
+        bool hasSed = _enableSEDParameters || line.find("CALC_SED_ORIGIN") != std::string::npos;
+
+        // rebuild the LOCHYPOUT line with only supported flags
+        std::string lochypout = "LOCHYPOUT NONE";
+        if ( hasSed ) {
+            lochypout += " CALC_SED_ORIGIN";
+            SEISCOMP_DEBUG("SED parameters enabled");
+        }
+        if ( hasExpect ) {
+            lochypout += " SAVE_NLLOC_EXPECTATION";
+            SEISCOMP_DEBUG("Using expectation hypocenter");
+        }
+
+        line = lochypout;
+    }
+
+    // if no LOCHYPOUT was in the original control file, add the default one now
+    if ( !seenLocHypOut ) {
+        std::string lochypout = "LOCHYPOUT NONE";
+        if ( _enableSEDParameters ) {
+            lochypout += " CALC_SED_ORIGIN";
+            SEISCOMP_DEBUG("SED parameters enabled");
+        }
+
+        _controlFile.push_back(lochypout);
+    }
+
 	std::vector<char*> obs_buf, control_buf;
 
 	obs_buf.resize(obs.size());
@@ -1246,7 +1285,6 @@ void NLLocator::updateProfile(const std::string &name) {
 
 	_currentProfile = prof;
 	_controlFile.clear();
-	bool seenLocHypOut = false;
 
 	// Unset all parameters
 	for ( ParameterMap::iterator it = _parameters.begin();
@@ -1269,8 +1307,9 @@ void NLLocator::updateProfile(const std::string &name) {
 				return;
 			}
 
-			std::string line;
-			while ( std::getline(f, line) ) {
+			while ( f.good() ) {
+				string line;
+				getline(f, line);
 				Core::trim(line);
 				// ignore empty lines
 				if ( line.empty() ) continue;
@@ -1280,28 +1319,6 @@ void NLLocator::updateProfile(const std::string &name) {
 				size_t pos = line.find_first_of(" \t\r\n");
 				if ( pos != string::npos ) {
 					string param = line.substr(0, pos);
-					string value = line.substr(pos+1);
-					Core::trim(value);
-
-					// Deal with LOCHYPOUT parameters
-					if ( param == "LOCHYPOUT" ) {
-						// Suppress physical NLL output - it will be done later manually
-						std::string lochypout = "LOCHYPOUT NONE";
-						// if the original had SAVE_NLLOC_EXPECTATION, keep it
-						if ( value.find("SAVE_NLLOC_EXPECTATION") != string::npos ) {
-							lochypout += " SAVE_NLLOC_EXPECTATION";
-							SEISCOMP_DEBUG("Using expectation hypocenter");
-						}
-						// if the original had CALC_SED_ORIGIN or it was set in _enableSEDParameters, keep it
-						if ( value.find("CALC_SED_ORIGIN") != string::npos || _enableSEDParameters ) {
-							lochypout += " CALC_SED_ORIGIN";
-							SEISCOMP_DEBUG("SED parameters enabled");
-						}
-						_controlFile.push_back(lochypout);
-						seenLocHypOut = true;
-						continue;
-					}
-
 					// Lookup the parameter name in the local parameter map
 					// If not available pass it to NLL directly without being able
 					// to modify it.
@@ -1309,20 +1326,12 @@ void NLLocator::updateProfile(const std::string &name) {
 					if ( it == _parameters.end() )
 						_controlFile.push_back(line);
 					else {
-						it->second = value;
+						it->second = line.substr(pos+1);
+						Core::trim(it->second);
 					}
 				}
 				else
 					_controlFile.push_back(line);
-			}
-
-			// Ensure a LOCHYPOUT line exists: add the default if none was found
-			if ( !seenLocHypOut ) {
-				std::string lochypout = "LOCHYPOUT NONE";
-				if ( _enableSEDParameters ) {
-					lochypout += " CALC_SED_ORIGIN";
-				}
-				_controlFile.push_back(lochypout);
 			}
 		}
 	}
