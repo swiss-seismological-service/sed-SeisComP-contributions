@@ -844,44 +844,44 @@ Origin* NLLocator::locate(PickList &pickList) {
 		}
 	}
 
-    // Deal with LOCHYPOUT options
-    // The plugin suppress physical NLL output (LOCHYPOUT NONE)
-    // but some supported flags can be used
-    bool seenLocHypOut = false;
+	// Deal with LOCHYPOUT options
+	// The plugin suppress physical NLL output (LOCHYPOUT NONE)
+	// but some supported flags can be used
+	bool seenLocHypOut = false;
 
-    for ( auto &line : _controlFile ) {
-        if ( line.rfind("LOCHYPOUT", 0) != 0 ) 
-            continue;
+	for ( auto &line : _controlFile ) {
+		if ( line.rfind("LOCHYPOUT", 0) != 0 ) 
+			continue;
 
-        seenLocHypOut = true;
-        // detect supported flags
-        bool hasExpect = line.find("SAVE_NLLOC_EXPECTATION") != std::string::npos;
-        bool hasSed = _enableSEDParameters || line.find("CALC_SED_ORIGIN") != std::string::npos;
+		seenLocHypOut = true;
+		// detect supported flags
+		bool hasExpect = line.find("SAVE_NLLOC_EXPECTATION") != std::string::npos;
+		bool hasSed = _enableSEDParameters || line.find("CALC_SED_ORIGIN") != std::string::npos;
 
-        // rebuild the LOCHYPOUT line with only supported flags
-        std::string lochypout = "LOCHYPOUT NONE";
-        if ( hasSed ) {
-            lochypout += " CALC_SED_ORIGIN";
-            SEISCOMP_DEBUG("SED parameters enabled");
-        }
-        if ( hasExpect ) {
-            lochypout += " SAVE_NLLOC_EXPECTATION";
-            SEISCOMP_DEBUG("Using expectation hypocenter");
-        }
+		// rebuild the LOCHYPOUT line with only supported flags
+		std::string lochypout = "LOCHYPOUT NONE";
+		if ( hasSed ) {
+			lochypout += " CALC_SED_ORIGIN";
+			SEISCOMP_DEBUG("SED parameters enabled");
+		}
+		if ( hasExpect ) {
+			lochypout += " SAVE_NLLOC_EXPECTATION";
+			SEISCOMP_DEBUG("Using expectation hypocenter");
+		}
 
-        line = lochypout;
-    }
+		line = lochypout;
+	}
 
-    // if no LOCHYPOUT was in the original control file, add the default one now
-    if ( !seenLocHypOut ) {
-        std::string lochypout = "LOCHYPOUT NONE";
-        if ( _enableSEDParameters ) {
-            lochypout += " CALC_SED_ORIGIN";
-            SEISCOMP_DEBUG("SED parameters enabled");
-        }
+	// if no LOCHYPOUT was in the original control file, add the default one now
+	if ( !seenLocHypOut ) {
+		std::string lochypout = "LOCHYPOUT NONE";
+		if ( _enableSEDParameters ) {
+			lochypout += " CALC_SED_ORIGIN";
+			SEISCOMP_DEBUG("SED parameters enabled");
+		}
 
-        _controlFile.push_back(lochypout);
-    }
+		_controlFile.push_back(lochypout);
+	}
 
 	std::vector<char*> obs_buf, control_buf;
 
