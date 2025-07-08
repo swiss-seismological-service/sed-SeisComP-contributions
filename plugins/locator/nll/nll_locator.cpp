@@ -844,11 +844,33 @@ Origin* NLLocator::locate(PickList &pickList) {
 		}
 	}
 
-	// Suppress physical NLL output it will be done later manually
-	if ( _enableSEDParameters )
-		params.push_back("LOCHYPOUT NONE CALC_SED_ORIGIN");
-	else
-		params.push_back("LOCHYPOUT NONE");
+	// Deal with LOCHYPOUT options
+	// The plugin suppress physical NLL output (LOCHYPOUT NONE)
+	// but some supported flags can be used
+	bool hasSed = _enableSEDParameters; // init true if user already set SED parameters
+	bool hasExpect = false;
+
+	for ( const auto &line : _controlFile ) {
+		if ( line.rfind("LOCHYPOUT", 0) != 0 ) 
+			continue;
+
+		// detect supported flags
+		if ( line.find("SAVE_NLLOC_EXPECTATION") != std::string::npos ) {
+			hasExpect = true;
+			SEISCOMP_DEBUG("Using expectation hypocenter");
+		}
+
+		if ( line.find("CALC_SED_ORIGIN") != std::string::npos ) {
+			hasSed = true;
+			SEISCOMP_DEBUG("SED parameters enabled");
+		}
+	}
+
+	params.push_back(
+		std::string("LOCHYPOUT NONE")
+		+ (hasSed ? " CALC_SED_ORIGIN" : "")
+		+ (hasExpect ? " SAVE_NLLOC_EXPECTATION" : "")
+	);
 
 	std::vector<char*> obs_buf, control_buf;
 
