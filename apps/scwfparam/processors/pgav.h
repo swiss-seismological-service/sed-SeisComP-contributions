@@ -68,6 +68,7 @@ class PGAV : public TimeWindowProcessor {
 			double  durationScale;
 
 			std::vector<double> dampings;
+			std::vector<double> customPeriods;
 			int     naturalPeriods;
 			bool    naturalPeriodsLog;
 			double  Tmin;
@@ -108,6 +109,8 @@ class PGAV : public TimeWindowProcessor {
 		                                   int nPeriods,
 		                                   double Tmin, double Tmax,
 		                                   bool logarithmicSpacing);
+
+		void setCustomPeriods(const std::vector<double> &periods);
 
 		void setAftershockRemovalEnabled(bool);
 		void setPreEventCutOffEnabled(bool);

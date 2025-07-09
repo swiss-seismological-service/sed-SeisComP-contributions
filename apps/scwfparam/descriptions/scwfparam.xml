@@ -114,7 +114,9 @@
 					<description>
 					Specifies the number of natural periods for computation of the
 					relative displacement elastic response spectrum between Tmin and Tmax.
-					If fixed is given then a fixed list of periods is used.
+					If &quot;fixed&quot; is given then a fixed list of periods is used. If
+					&quot;custom&quot; is defined then a custom list of periods
+					will be used. This list must be configured with &quot;customPeriods&quot;.
 					</description>
 				</parameter>
 				<group name="naturalPeriods">
@@ -126,6 +128,13 @@
 						</description>
 					</parameter>
 				</group>
+				<parameter name="customPeriods" type="list:double" unit="s">
+					<description>
+					A list of periods to be used for computation of the
+					relative displacement elastic response spectrum. This list
+					will only be in effect if &quot;naturalPeriods = custom&quot;.
+					</description>
+				</parameter>
 				<parameter name="Tmin" type="double" unit="s" default="0">
 					<description>
 					Specifies the minimum period (Tmin) in seconds for computation of the
