@@ -392,6 +392,7 @@ WFParam::WFParam(int argc, char **argv) : Application(argc, argv) {
 	NEW_OPT(_config.STALTAmargin, "wfparam.STALTAmargin");
 	NEW_OPT(_config.durationScale, "wfparam.durationScale");
 	NEW_OPT(_config.dampings, "wfparam.dampings");
+	NEW_OPT(_config.customPeriods, "wfparam.customPeriods");
 	NEW_OPT(_config.naturalPeriodsStr, "wfparam.naturalPeriods");
 	NEW_OPT(_config.naturalPeriodsLog, "wfparam.naturalPeriods.log");
 	NEW_OPT(_config.Tmin, "wfparam.Tmin");
@@ -528,30 +529,44 @@ bool WFParam::validateParameters() {
 	if ( !_config.eventID.empty() && !_config.enableMessagingOutput )
 		setMessagingEnabled(false);
 
-	if ( _config.naturalPeriodsStr == "fixed" )
+	if ( _config.naturalPeriodsStr == "fixed" ) {
 		_config.naturalPeriodsFixed = true;
-	else {
-		if ( !Core::fromString(_config.naturalPeriods, _config.naturalPeriodsStr) ) {
-			SEISCOMP_ERROR("wfparam.naturalPeriods: "
-			               "neither valid int value '%s' nor 'fixed' found",
-			               _config.naturalPeriodsStr.c_str());
+		_config.customPeriods.clear();
+	}
+	else if ( _config.naturalPeriodsStr == "custom" ) {
+		if ( _config.customPeriods.empty() ) {
+			SEISCOMP_ERROR("The period list is configured at custom but not "
+			               "custom periods are given, see wfparam.customPeriods");
+			return false;
 		}
 
 		_config.naturalPeriodsFixed = false;
+	}
+	else {
+		if ( !Core::fromString(_config.naturalPeriods, _config.naturalPeriodsStr) ) {
+			SEISCOMP_ERROR("wfparam.naturalPeriods: "
+			               "neither valid int value '%s' nor 'fixed' nor 'custom' found",
+			               _config.naturalPeriodsStr.c_str());
+			return false;
+		}
+
+		_config.naturalPeriodsFixed = false;
+		_config.customPeriods.clear();
 	}
 
 	if ( _config.offline )
 		// If the inventory is provided by an XML file and
 		// an event XML is provided, disable the database
-		if ( !isInventoryDatabaseEnabled() && !_config.eventParameterFile.empty() )
+		if ( !isInventoryDatabaseEnabled() && !_config.eventParameterFile.empty() ) {
 			setDatabaseEnabled(false, false);
+		}
 
 	for ( size_t i = 0; i < _config.vecMagnitudeTimeWindowTable.size(); ++i ) {
 		string &item = _config.vecMagnitudeTimeWindowTable[i];
 		size_t pos = item.find(':');
 		if ( pos == string::npos ) {
 			SEISCOMP_ERROR("wfparam.magnitudeTimeWindowTable:%d: missing ':'",
-			               (int)(i+1));
+			               static_cast<int>(i + 1));
 			return false;
 		}
 
@@ -559,14 +574,16 @@ bool WFParam::validateParameters() {
 		if ( !Core::fromString(mag, item.substr(0, pos)) ) {
 			SEISCOMP_ERROR("wfparam.magnitudeTimeWindowTable:%d: "
 			               "invalid double value '%s'",
-			               (int)(i+1), item.substr(0, pos).c_str());
+			               static_cast<int>(i + 1),
+			               item.substr(0, pos).c_str());
 			return false;
 		}
 
 		if ( !Core::fromString(value, item.substr(pos+1)) ) {
 			SEISCOMP_ERROR("wfparam.magnitudeTimeWindowTable:%d: "
 			               "invalid double value '%s'",
-			               (int)(i+1), item.substr(pos+1).c_str());
+			               static_cast<int>(i + 1),
+			               item.substr(pos+1).c_str());
 			return false;
 		}
 
@@ -578,7 +595,7 @@ bool WFParam::validateParameters() {
 		size_t pos = item.find(':');
 		if ( pos == string::npos ) {
 			SEISCOMP_ERROR("wfparam.magnitudeDistanceTable:%d: missing ':'",
-			               (int)(i+1));
+			               static_cast<int>(i + 1));
 			return false;
 		}
 
@@ -586,14 +603,14 @@ bool WFParam::validateParameters() {
 		if ( !Core::fromString(mag, item.substr(0, pos)) ) {
 			SEISCOMP_ERROR("wfparam.magnitudeDistanceTable:%d: "
 			               "invalid double value '%s'",
-			               (int)(i+1), item.substr(0, pos).c_str());
+			               static_cast<int>(i + 1), item.substr(0, pos).c_str());
 			return false;
 		}
 
 		if ( !Core::fromString(dist, item.substr(pos+1)) ) {
 			SEISCOMP_ERROR("wfparam.magnitudeDistanceTable:%d: "
 			               "invalid double value '%s'",
-			               (int)(i+1), item.substr(pos+1).c_str());
+			               static_cast<int>(i + 1), item.substr(pos+1).c_str());
 			return false;
 		}
 
@@ -606,7 +623,7 @@ bool WFParam::validateParameters() {
 		size_t pos = item.find(':');
 		if ( pos == string::npos ) {
 			SEISCOMP_ERROR("wfparam.magnitudeFilterTable:%d: missing ':'",
-			               (int)(i+1));
+			               static_cast<int>(i + 1));
 			return false;
 		}
 
@@ -616,7 +633,7 @@ bool WFParam::validateParameters() {
 		if ( !Core::fromString(mag, item.substr(0, pos)) ) {
 			SEISCOMP_ERROR("wfparam.magnitudeFilterTable:%d: "
 			               "invalid double value '%s'",
-			               (int)(i+1), item.substr(0, pos).c_str());
+			               static_cast<int>(i + 1), item.substr(0, pos).c_str());
 			return false;
 		}
 
@@ -624,7 +641,7 @@ bool WFParam::validateParameters() {
 		pos = strFreqs.find(';');
 		if ( pos == string::npos ) {
 			SEISCOMP_ERROR("wfparam.magnitudeFilterTable:%d: missing ';' as frequency separator",
-			               (int)(i+1));
+			               static_cast<int>(i + 1));
 			return false;
 		}
 
@@ -632,14 +649,18 @@ bool WFParam::validateParameters() {
 		Core::trim(strFMin);
 		int r = PGAV::Config::freqFromString(freqs.first, strFMin);
 		if ( r ) {
-			if ( r == 2 )
+			if ( r == 2 ) {
 				SEISCOMP_ERROR("wfparam.magnitudeFilterTable:%d: "
 				               "negative value for fmin is not allowed '%s'",
-				               (int)(i+1), strFMin.c_str());
-			else
+				               static_cast<int>(i + 1),
+				               strFMin.c_str());
+			}
+			else {
 				SEISCOMP_ERROR("wfparam.magnitudeFilterTable:%d: "
 				               "invalid value for fmin '%s'",
-				               (int)(i+1), strFMin.c_str());
+				               static_cast<int>(i + 1),
+				               strFMin.c_str());
+			}
 			return false;
 		}
 
@@ -651,11 +672,11 @@ bool WFParam::validateParameters() {
 			if ( r == 2 )
 				SEISCOMP_ERROR("wfparam.magnitudeFilterTable:%d: "
 				               "negative value for fmax is not allowed '%s'",
-				               (int)(i+1), strFMax.c_str());
+				               static_cast<int>(i + 1), strFMax.c_str());
 			else
 				SEISCOMP_ERROR("wfparam.magnitudeFilterTable:%d: "
 				               "invalid value for fmax '%s'",
-				               (int)(i+1), strFMax.c_str());
+				               static_cast<int>(i + 1), strFMax.c_str());
 			return false;
 		}
 
@@ -1711,10 +1732,13 @@ int WFParam::addProcessor(const DataModel::WaveformStreamID &waveformID,
 	PGAVPtr proc = new PGAV(time);
 	proc->setEventWindow(_config.preEventWindowLength, _totalTimeWindowLength);
 	proc->setSTALTAParameters(_config.STAlength, _config.LTAlength, _config.STALTAratio, _config.STALTAmargin);
-	if ( _config.naturalPeriodsFixed )
+	if ( _config.naturalPeriodsFixed ) {
 		proc->setResponseSpectrumParameters(_config.dampings);
-	else
+	}
+	else {
 		proc->setResponseSpectrumParameters(_config.dampings, _config.naturalPeriods, _config.Tmin, _config.Tmax, _config.naturalPeriodsLog);
+		proc->setCustomPeriods(_config.customPeriods);
+	}
 	proc->setAftershockRemovalEnabled(_config.afterShockRemoval);
 	proc->setPreEventCutOffEnabled(_config.eventCutOff);
 	proc->setSaturationThreshold((_config.saturationThreshold * 0.01) * (1 << 23));
