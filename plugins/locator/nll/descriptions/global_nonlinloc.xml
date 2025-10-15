@@ -3,148 +3,161 @@
 	<plugin name="NonLinLoc">
 		<extends>global</extends>
 		<description>
-			NonLinLoc locator wrapper plugin for SeisComP.
-			NonLinLoc was written by Anthony Lomax (http://alomax.free.fr/nlloc).
+		NonLinLoc locator wrapper plugin for SeisComP.
+		NonLinLoc was written by Anthony Lomax (http://alomax.free.fr/nlloc).
 		</description>
 		<configuration>
 			<group name="NonLinLoc">
 				<parameter name="publicID" type="string" default="NLL.@time/%Y%m%d%H%M%S.%f@.@id@">
 					<description>
-						PublicID creation pattern for an origin created by NonLinLoc.
+					PublicID creation pattern for an origin created by NonLinLoc.
 					</description>
 				</parameter>
 
-				<parameter name="outputPath" type="path" default="/tmp/sc3.nll">
+				<parameter name="outputPath" type="directory" default="/tmp/sc3.nll" options="write">
 					<description>
-						Defines the output path for all native NonLinLoc input and output files.
+					Defines the output directory for all native NonLinLoc input and output files.
 					</description>
 				</parameter>
 
 				<parameter name="saveInput" type="boolean" default="true">
 					<description>
-						Save input files *.obs in outputPath for later processing.
-						Setting to false reduces file i/o and saves disk space.
+					Save input files *.obs in outputPath for later processing.
+					Setting to false reduces file i/o and saves disk space.
 					</description>
 				</parameter>
 
 				<parameter name="saveIntermediateOutput" type="boolean" default="true">
 					<description>
-						Save output files in outputPath for later processing or
-						for viewing by the Seismicity Viewer.
-						Setting to false reduces file i/o and saves disk space.
+					Save output files in outputPath for later processing or
+					for viewing by the Seismicity Viewer.
+					Setting to false reduces file i/o and saves disk space.
 					</description>
 				</parameter>
 
-				<parameter name="controlFile" type="path">
+				<parameter name="controlFile" type="file" options="read">
 					<description>
-						The default NonLinLoc control file to use.
+					The default NonLinLoc control file to use. Parameters
+					therein are overridden per profile.
 					</description>
 				</parameter>
 
 				<parameter name="defaultPickError" type="double" default="0.5" unit="s">
 					<description>
-						The default pick error in seconds passed to NonLinLoc if a SeisComP pick
-						object does not provide pick time uncertainties.
+					The default pick error in seconds passed to NonLinLoc if a SeisComP pick
+					object does not provide pick time uncertainties.
 					</description>
 				</parameter>
 
 				<parameter name="fixedDepthGridSpacing" type="double" default="0.1" unit="km">
 					<description>
-						Since NLL does not support fixing the depth natively so this
-						feature is emulated by settings the Z grid very tight around
-						the depth to be fixed. This value sets the Z grid spacing.
+					Since NLL does not support fixing the depth natively so this
+					feature is emulated by settings the Z grid very tight around
+					the depth to be fixed. This value sets the Z grid spacing.
 					</description>
 				</parameter>
 
 				<parameter name="allowMissingStations" type="boolean" default="true">
 					<description>
-						Picks from stations with missing configuration will be
-						ignored. The origin will be relocated without that pick
-						if possible.
+					Picks from stations with missing configuration will be
+					ignored. The origin will be relocated without that pick
+					if possible.
 
-						If set to false, the plug-in throws
-						an excepection without locating.
+					If set to false, the plug-in throws
+					an excepection without locating.
 					</description>
 				</parameter>
 
 				<parameter name="profiles" type="list:string">
 					<description>
-						Defines a list of active profiles to be used by the plugin.
+					Defines a list of active profiles to be used by the plugin.
 					</description>
 				</parameter>
 
 				<group name="profile">
 					<struct type="NonLinLoc profile" link = "NonLinLoc.profiles">
 						<description>
-							Defines a regional profile that is used if a prelocation falls
-							inside the configured region.
+						Defines a regional profile that is used if a prelocation falls
+						inside the configured region.
 						</description>
 						<parameter name="earthModelID" type="string">
 							<description>
-								earthModelID that is stored in the created origin.
+							Earth model ID stored in the created origin.
 							</description>
 						</parameter>
 						<parameter name="methodID" type="string" default="NonLinLoc">
 							<description>
-								methodID that is stored in the created origin.
+							Method ID stored in the created origin.
 							</description>
 						</parameter>
 						<parameter name="tablePath" type="path">
 							<description>
-								Path to travel time tables (grids).
+							Path to travel time tables (grids) including the
+							full path and the names of the table files before
+							the phase name.
+
+							Example:
+
+							@DATADIR@/nonlinloc/iasp91/iasp91 for P and S tables
+							files
+							seiscomp/share/nonlinloc/iasp91/iasp91.[PS].*
 							</description>
 						</parameter> 
 						<parameter name="stationNameFormat" type="string" default="@STA@">
 							<description>
-								Format of the station name used to select the right travel time table (grid) file
-								for a station. 
-								By default only the station code is used (e.g. tablePath.P.@STA@.time.*), but
-								that doesn't allow to distinguish between multiple network codes or location codes
-								that use the same station code.
-								To overcome this limitation this parameter could be set in a more general way, for
-								example @NET@_@STA@_@LOC@. In this way NonLinLoc will look for
-								travel time table (grid) files of the form: tablePath.P.@NET@_@STA@_@LOC@.time.*
-								Where @NET@ @STA@ @LOC@ are just placeholder for the actual codes
+							Format of the station name used to select the right travel time table (grid) file
+							for a station.
+							By default only the station code is used (e.g. tablePath.P.@STA@.time.*), but
+							that doesn't allow to distinguish between multiple network codes or location codes
+							that use the same station code.
+							To overcome this limitation this parameter could be set in a more general way, for
+							example @NET@_@STA@_@LOC@. In this way NonLinLoc will look for
+							travel time table (grid) files of the form: tablePath.P.@NET@_@STA@_@LOC@.time.*
+							Where @NET@ @STA@ @LOC@ are just placeholder for the actual codes.
 							</description>
 						</parameter> 
-						<parameter name="controlFile" type="path">
+						<parameter name="controlFile" type="file" options="read">
 							<description>
-								Control file of the current profile. If not set, the default
-								control file will be used instead.
+							Control file of the current profile overriding
+							parameters of the default control file.
 							</description>
 						</parameter>
 						<parameter name="transform" type="string" default="GLOBAL">
 							<description>
-								Transformation type of the configured region. Supported are
-								SIMPLE and GLOBAL.
-
-								Default: GLOBAL is assumed.
+							Transformation type of the configured region.
+							Supported are SIMPLE and GLOBAL.
 							</description>
 						</parameter>
 						<parameter name="region" type="list:double">
 							<description>
-								Defines the 4 corner values of the epicentral region for selecting the profile.
-								The original epicentre must be within the region.
+							Defines the 4 corner values of the epicentral region for selecting the profile.
+							The original epicentre must be within the region.
 
-								If transform is GLOBAL: min_lat, min_lon, max_lat, max_lon.
-								The values define the geographic corner coordinates. Unit is degree.
+							If transform is GLOBAL: min_lat, min_lon, max_lat, max_lon.
+							The values define the geographic corner coordinates.
+							Unit: degree.
 
-								If transform is SIMPLE: xmin, ymin, xmax, ymax.
-								The values define the region relative to the configured origin.
-								Unit is km.
+							If transform is SIMPLE: min_x, min_y, max_x, max_y.
+							The values define the region relative to the origin
+							configured with &quot;origin&quot;.
+							Unit: km.
+
+							When this parameter is empty, the generated NonLinLoc
+							configuration is automatically overwritten with
+							TRANS GLOBAL.
+							Otherwise TRANS from &quot;controlFile&quot; applies.
 							</description>
 						</parameter>
 						<parameter name="origin" type="list:double" unit="deg">
 							<description>
-								Only used for transformation SIMPLE. Expects 2 values: latitude, longitude.
-								The value define the geographic origin of the area spanned by region.
-								Unit is degree.
+							Only used for transformation SIMPLE. Expects 2 values: latitude, longitude.
+							The value define the geographic origin of the area spanned by region.
 							</description>
 						</parameter>
 						<parameter name="rotation" type="double" unit="deg">
 							<description>
-								Only used for transformation SIMPLE. Defines the rotation around the
-								origin of the defined region.
+							Only used for transformation SIMPLE. Defines the
+							rotation around the origin of the defined region.
 							</description>
 						</parameter>
 					</struct>
