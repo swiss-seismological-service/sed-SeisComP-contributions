@@ -454,7 +454,9 @@ bool NLLocator::init(const Config::Config &config) {
 		catch ( ... ) {}
 
 		try { prof.stationNameFormat = config.getString(prefix + "stationNameFormat"); }
-		catch ( ... ) { prof.stationNameFormat = "@STA@"; } 
+		catch ( ... ) {
+			prof.stationNameFormat = "@STA@";
+		}
 
 		if ( prof.tablePath.empty() ) {
 			SEISCOMP_ERROR("NonLinLoc.profile.%s: none or empty tablePath", it->c_str());
@@ -473,12 +475,14 @@ bool NLLocator::init(const Config::Config &config) {
 		}
 
 
-		if ( regionType == "GLOBAL" )
+		if ( regionType == "GLOBAL" ) {
 			prof.region = new GlobalRegion;
-		else if ( regionType == "SIMPLE" )
+		}
+		else if ( regionType == "SIMPLE" ) {
 			prof.region = new SimpleTransformedRegion;
+		}
 
-		if ( prof.region == nullptr ) {
+		if ( !prof.region ) {
 			SEISCOMP_ERROR("NonLinLoc.profile.%s: invalid transformation: %s",
 			               it->c_str(), regionType.c_str());
 			it = _profileNames.erase(it);
@@ -498,8 +502,9 @@ bool NLLocator::init(const Config::Config &config) {
 		}
 		catch ( ... ) {}
 
-		if ( prof.controlFile.empty() )
+		if ( prof.controlFile.empty() ) {
 			prof.controlFile = _controlFilePath;
+		}
 
 		if ( !Util::fileExists(prof.controlFile) ) {
 			SEISCOMP_ERROR("NonLinLoc.profile.%s.controlFile: file %s does not exist",
@@ -630,13 +635,16 @@ NLLocator::IDList NLLocator::profiles() const {
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 void NLLocator::setProfile(const string &name) {
 	if ( find(_profileNames.begin(), _profileNames.end(), name) ==
-	     _profileNames.end() )
+	     _profileNames.end() ) {
 		return;
+	}
 
-	if ( name == "automatic" )
+	if ( name == "automatic" ) {
 		_currentProfile = nullptr;
-	else
+	}
+	else {
 		updateProfile(name);
+	}
 }
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -659,7 +667,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 	if ( pickList.empty() )
 		throw LocatorException("Empty observation set");
 
-	if ( _currentProfile == nullptr ) {
+	if ( !_currentProfile ) {
 		throw GeneralException("No profile set");
 	}
 
@@ -667,7 +675,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 		throw GeneralException("Invalid control file");
 	}
 
-	SEISCOMP_DEBUG("requested earth model: %s", _currentProfile->earthModelID.c_str());
+	SEISCOMP_DEBUG("Requested earth model: %s", _currentProfile->earthModelID.c_str());
 
 	string earthModelPath, stationNameFormat;
 	bool globalMode = false;
@@ -677,10 +685,12 @@ Origin* NLLocator::locate(PickList &pickList) {
 	globalMode = _currentProfile->region->isGlobal();
 
 	if ( earthModelPath.empty() ) {
-		if ( _profileNames.empty() )
+		if ( _profileNames.empty() ) {
 			throw GeneralException("No earth model configured");
-		else
+		}
+		else {
 			throw GeneralException("Wrong earth model set");
+		}
 	}
 
 
@@ -703,7 +713,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 		double weight = it->flags & F_TIME?1.0:0.0;
 
 		SensorLocation *sloc = getSensorLocation(pick);
-		if ( sloc == nullptr ) {
+		if ( !sloc ) {
 			if ( _allowMissingStations ) {
 				// Append a new line to the warning message
 				if ( !_lastWarning.empty() )
@@ -778,27 +788,33 @@ Origin* NLLocator::locate(PickList &pickList) {
 		obs.push_back(ss.str());
 	}
 
-	if ( obs.empty() )
+	if ( obs.empty() ) {
 		throw LocatorException("Empty observation set due to missing stations");
+	}
 
 	Origin *origin;
 	if ( !_publicIDPattern.empty() ) {
 		origin = Origin::Create("");
 		PublicObject::GenerateId(origin, _publicIDPattern);
 	}
-	else
+	else {
 		origin = Origin::Create();
+	}
 
-	SEISCOMP_DEBUG("New origin publicID: %s", origin->publicID().c_str());
 	string outputPath = _outputPath + origin->publicID();
 
-	if ( globalMode )
+	if ( globalMode ) {
+		SEISCOMP_DEBUG("Region is empty - assuming GLOBAL.");
+		SEISCOMP_DEBUG("Explicitly adding TRANS GLOBAL to NonLinLoc "
+		               "configuration. This may impact the performance.");
 		params.push_back("LOCFILES - NLLOC_OBS " + earthModelPath + " " + outputPath + " 1");
-	else
-		params.push_back("LOCFILES - NLLOC_OBS " + earthModelPath + " " + outputPath);
-
-	if ( globalMode )
 		params.push_back("TRANS GLOBAL");
+	}
+	else {
+		SEISCOMP_DEBUG("Assuming TRANS parameter as configured in %s",
+		               _currentProfile->controlFile);
+		params.push_back("LOCFILES - NLLOC_OBS " + earthModelPath + " " + outputPath);
+	}
 
 	if ( _usingFixedDepth ) {
 		bool foundLocGrid = false;
@@ -806,10 +822,13 @@ Origin* NLLocator::locate(PickList &pickList) {
 		for ( TextLines::iterator it = params.begin(); it != params.end(); ++it ) {
 			size_t pos = it->find_first_of(" \t\r\n");
 			if ( pos != string::npos ) {
-				if ( it->compare(0, pos, "LOCGRID") != 0 )
+				if ( it->compare(0, pos, "LOCGRID") != 0 ) {
 					continue;
+				}
 			}
-			else if ( *it != "LOCGRID") continue;
+			else if ( *it != "LOCGRID") {
+				continue;
+			}
 
 			// Modify LOCGRID element
 			vector<string> toks;
@@ -922,7 +941,9 @@ Origin* NLLocator::locate(PickList &pickList) {
 					Pick *pick = it->pick.get();
 
 					SensorLocation *sloc = getSensorLocation(pick);
-					if ( sloc == nullptr ) continue;
+					if ( !sloc ) {
+						continue;
+					}
 					double dist, az, baz;
 
 					// Compute distance from origin to station
@@ -981,31 +1002,34 @@ Origin* NLLocator::locate(PickList &pickList) {
 				// write NLLoc Hypocenter-Phase file to disk
 				if ( WriteLocation(nullptr, locNode->plocation->phypo, locNode->plocation->parrivals,
 				                   locNode->plocation->narrivals, const_cast<char*>((outputPath + ".loc.hyp").c_str()),
-				                   1, 1, 0, locNode->plocation->pgrid, 0) < 0 )
-					SEISCOMP_ERROR("Failed writing location to event file: %s", (outputPath + ".loc.hyp").c_str());
+				                   1, 1, 0, locNode->plocation->pgrid, 0) < 0 ) {
+					SEISCOMP_ERROR("Failed writing location to event file: %s", (outputPath + ".loc.hyp"));
+				}
 
 				// write NLLoc location Grid Header file to disk
 				if ( WriteGrid3dHdr(locNode->plocation->pgrid, nullptr,
 				                    const_cast<char*>(outputPath.c_str()),
 				                    const_cast<char*>("loc")) < 0 )
-					SEISCOMP_ERROR("Failed writing grid header to disk: %s", outputPath.c_str());
+					SEISCOMP_ERROR("Failed writing grid header to disk: %s",
+					               outputPath);
 
 				// write NLLoc location Oct tree structure of locaiton likelihood values to disk
 				if ( return_oct_tree_grid ) {
 					FILE *fpio = fopen((outputPath + ".loc.octree").c_str(), "w");
-					if ( fpio != nullptr ) {
+					if ( fpio ) {
 						istat = writeTree3D(fpio, locNode->plocation->poctTree);
 						fclose(fpio);
 						SEISCOMP_INFO("Oct tree structure written to file: %d nodes", istat);
 					}
-					else
-						SEISCOMP_ERROR("Failed writing octree grid: %s", (outputPath + ".loc.octree").c_str());
+					else {
+						SEISCOMP_ERROR("Failed writing octree grid: %s", (outputPath + ".loc.octree"));
+					}
 				}
 
 				// write NLLoc binary Scatter file to disk
 				if ( return_scatter_sample ) {
 					FILE *fpio = fopen((outputPath + ".loc.scat").c_str(), "w");
-					if ( fpio != nullptr ) {
+					if ( fpio ) {
 						// write scatter file header informaion
 						fseek(fpio, 0, SEEK_SET);
 						fwrite(&(locNode->plocation->phypo->nScatterSaved), sizeof(int), 1, fpio);
@@ -1017,8 +1041,9 @@ Origin* NLLocator::locate(PickList &pickList) {
 						fwrite(locNode->plocation->pscatterSample, 4 * sizeof(float), locNode->plocation->phypo->nScatterSaved, fpio);
 						fclose(fpio);
 					}
-					else
+					else {
 						SEISCOMP_ERROR("Failed writing scatter file: %s", (outputPath + ".loc.scat").c_str());
+					}
 				}
 			}
 		}
@@ -1030,15 +1055,24 @@ Origin* NLLocator::locate(PickList &pickList) {
 	if ( _enableNLLSaveInput ) {
 		// Save NLL observation input
 		ofstream obsOut((outputPath + ".obs").c_str());
-		for ( size_t i = 0; i < obs_buf.size(); ++i )
+		for ( size_t i = 0; i < obs_buf.size(); ++i ) {
 			obsOut << obs_buf[i];
+		}
 		obsOut.close();
+		SEISCOMP_DEBUG("Saving phase observations in %s.obs", outputPath);
 
 		// Save NLL control input
 		ofstream controlOut((outputPath + ".conf").c_str());
-		for ( size_t i = 0; i < control_buf.size(); ++i )
+		SEISCOMP_DEBUG("Saving NonLinLoc configuration to %s.conf", outputPath);
+		for ( size_t i = 0; i < control_buf.size(); ++i ) {
 			controlOut << control_buf[i] << endl;
+		}
 		controlOut.close();
+	}
+	else {
+		SEISCOMP_DEBUG("NonLinLoc configuration and phase observations"
+		               "not written to file as configured by"
+		               "&quot;NonLinLoc.saveInput&quot;");
 	}
 
 	// clean up
@@ -1049,8 +1083,11 @@ Origin* NLLocator::locate(PickList &pickList) {
 		origin = nullptr;
 	}
 
-	if ( locNode == nullptr )
+	if ( !locNode ) {
 		throw LocatorException("Empty location");
+	}
+
+	SEISCOMP_DEBUG("New origin with publicID %s", origin->publicID());
 
 	return origin;
 }
@@ -1074,7 +1111,9 @@ Origin* NLLocator::locate(PickList &pickList,
 Origin* NLLocator::relocate(const Origin *origin) {
 	_lastWarning = "";
 
-	if ( origin == nullptr ) return nullptr;
+	if ( !origin ) {
+		return nullptr;
+	}
 
 	double lat = origin->latitude().value();
 	double lon = origin->longitude().value();
@@ -1082,7 +1121,7 @@ Origin* NLLocator::relocate(const Origin *origin) {
 
 	SEISCOMP_DEBUG("Relocating origin with publicID: %s", origin->publicID().c_str());
 
-	if ( _currentProfile == nullptr ) {
+	if ( !_currentProfile ) {
 		// Find best earth model based on region information and
 		// the initial origin
 		emptyProfile = true;
@@ -1091,15 +1130,17 @@ Origin* NLLocator::relocate(const Origin *origin) {
 			// if epicenter is inside the configured region, use it
 			if ( it->region->isInside(lat, lon) ) {
 				updateProfile(it->name);
+				SEISCOMP_DEBUG("Epicenter at %.2f/%.2f is inside region, "
+				               "considering profile %s", lat, lon, it->name);
 				break;
 			}
 		}
 
-		SEISCOMP_DEBUG("matching earth model: %s",
-		               _currentProfile == nullptr?"none":_currentProfile->earthModelID.c_str());
+		SEISCOMP_DEBUG("Matching earth model: %s",
+		               !_currentProfile?"none":_currentProfile->earthModelID.c_str());
 	}
 
-	if ( _currentProfile == nullptr ) {
+	if ( !_currentProfile ) {
 		throw LocatorException(
 			string("No matching earth model found "
 			       "for location (lat: ") + Core::toString(lat) +
@@ -1143,10 +1184,11 @@ Origin* NLLocator::relocate(const Origin *origin) {
 			}
 
 			picks.push_back(PickItem(pick.get(), flags));
-
 		}
 		else {
-			if ( emptyProfile ) _currentProfile = nullptr;
+			if ( emptyProfile ) {
+				_currentProfile = nullptr;
+			}
 
 			throw PickNotFoundException(
 				"pick '" + origin->arrival(i)->pickID() + "' not found"
@@ -1218,8 +1260,9 @@ Origin* NLLocator::relocate(const Origin *origin) {
 					throw exc;
 				}
 
-				if ( org == nullptr )
+				if ( !org ) {
 					org = lastWorkingOrg;
+				}
 				else {
 					// New origin available => delete the old one
 					delete lastWorkingOrg;
@@ -1262,13 +1305,17 @@ void NLLocator::updateProfile(const std::string &name) {
 	Profile *prof = nullptr;
 	for ( Profiles::iterator it = _profiles.begin();
 	      it != _profiles.end(); ++it ) {
-		if ( it->name != name ) continue;
+		if ( it->name != name ) {
+			continue;
+		}
 
 		prof = &(*it);
 		break;
 	}
 
-	if ( prof == _currentProfile ) return;
+	if ( prof == _currentProfile ) {
+		return;
+	}
 
 	SEISCOMP_DEBUG("Setting profile %s", name.c_str());
 
@@ -1291,7 +1338,7 @@ void NLLocator::updateProfile(const std::string &name) {
 			SEISCOMP_DEBUG("Reading control file: %s", controlFile.c_str());
 			ifstream f(controlFile.c_str());
 			if ( !f.is_open() ) {
-				SEISCOMP_ERROR("NonLinLoc: unable to open control file at %s",
+				SEISCOMP_ERROR("NonLinLoc: unable to open control file %s",
 				               controlFile.c_str());
 				return;
 			}
@@ -1337,7 +1384,7 @@ bool NLLocator::NLL2SC3(Origin *origin, string &locComment, const void *vnode,
 	const LocNode *node = static_cast<const LocNode*>(vnode);
 	set<Pick*> associatedPicks;
 
-	SEISCOMP_DEBUG("Convert NLL origin to SC3");
+	SEISCOMP_DEBUG("Convert NLL origin to SCML");
 	locComment = "";
 
 	HypoDesc *phypo = node->plocation->phypo;
@@ -1361,17 +1408,19 @@ bool NLLocator::NLL2SC3(Origin *origin, string &locComment, const void *vnode,
 	origin->setLatitude(RealQuantity(phypo->dlat, lat_error, None, None, None));
 	origin->setLongitude(RealQuantity(normalizeLon(phypo->dlong), lon_error, None, None, None));
 
-	if ( depthFixed )
+	if ( depthFixed ) {
 		origin->setDepth(RealQuantity(phypo->depth));
-	else
+	}
+	else {
 		origin->setDepth(RealQuantity(phypo->depth, dep_error, None, None, None));
+	}
 
 	for ( int i = 0; i < node->plocation->narrivals; ++i ) {
 		ArrivalDesc *parr = node->plocation->parrivals + i;
 
 		if ( parr->original_obs_index < 0 ||
 		     parr->original_obs_index >= (int)picks.size() ) {
-			SEISCOMP_WARNING("NLL: ignoring invalid arrival for observation id %d",
+			SEISCOMP_WARNING("Ignoring invalid arrival for observation id %d",
 			                 parr->original_obs_index);
 			continue;
 		}
@@ -1405,7 +1454,9 @@ bool NLLocator::NLL2SC3(Origin *origin, string &locComment, const void *vnode,
 
 		// Skip unknown station
 		SensorLocation *sloc = getSensorLocation(pick.get());
-		if ( sloc == nullptr ) continue;
+		if ( !sloc ) {
+			continue;
+		}
 
 		// Compute distance and azimuth
 		double dist, az, baz;
@@ -1509,7 +1560,7 @@ bool NLLocator::NLL2SC3(Origin *origin, string &locComment, const void *vnode,
 	if ( strcmp(phypo->locStat, "LOCATED") != 0 ) {
 		origin->setEvaluationStatus(EvaluationStatus(REJECTED));
 		locComment = phypo->locStatComm;
-		SEISCOMP_WARNING("NonLinLoc: origin %s has been rejected: %s",
+		SEISCOMP_WARNING("Origin %s gets evaluation status 'rejected': %s",
 		                 origin->publicID().c_str(), locComment.c_str());
 	}
 
