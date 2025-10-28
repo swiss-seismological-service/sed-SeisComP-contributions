@@ -67,7 +67,6 @@
 #include <seiscomp/datamodel/messages.h>
 #include <seiscomp/io/recordstream/file.h>
 #include <seiscomp/io/recordstream/slconnection.h>
-#include <seiscomp/io/recordstream/arclink.h>
 #include <seiscomp/io/recordstream/combined.h>
 
 #include <seiscomp/datamodel/strongmotion/strongmotionparameters_package.h>
