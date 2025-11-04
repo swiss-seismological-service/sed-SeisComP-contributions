@@ -502,12 +502,12 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 						if ( _results[0]->value.value >= _results[1]->value.value ) {
 							newRes.amplitude =  _results[0]->value;
 							newRes.time = _results[0]->time;
-							newRes.component = _ampE.usedComponent();
+							newRes.component = _ampE.dataComponents();
 						}
 						else {
 							newRes.amplitude =  _results[1]->value;
 							newRes.time = _results[1]->time;
-							newRes.component = _ampN.usedComponent();
+							newRes.component = _ampN.dataComponents();
 						}
 						break;
 					case Minimum:
@@ -515,12 +515,12 @@ class AmplitudeProcessor_ML2h : public Processing::AmplitudeProcessor {
 						if ( _results[0]->value.value <= _results[1]->value.value ) {
 							newRes.amplitude =  _results[0]->value;
 							newRes.time = _results[0]->time;
-							newRes.component = _ampE.usedComponent();
+							newRes.component = _ampE.dataComponents();
 						}
 						else {
 							newRes.amplitude =  _results[1]->value;
 							newRes.time = _results[1]->time;
-							newRes.component = _ampN.usedComponent();
+							newRes.component = _ampN.dataComponents();
 						}
 						break;
 						// Not a correct type? Do nothing.

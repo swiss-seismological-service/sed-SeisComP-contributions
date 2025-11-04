@@ -99,7 +99,7 @@ class WFParam : public Application {
 		int addProcessor(const DataModel::WaveformStreamID &streamID,
 		                 DataModel::Stream *selectedStream,
 		                 const Core::Time &time,
-		                 Processing::WaveformProcessor::StreamComponent component
+		                 Processing::WaveformProcessor::StreamComponents component
 		                 = Processing::WaveformProcessor::Vertical);
 		bool createProcessor(Record *rec);
 

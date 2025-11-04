@@ -721,13 +721,13 @@ void PGAV::process(const Record *record, const DoubleArray &) {
 	if ( _stream.fsamp == 0.0 )
 		return;
 
-	if ( _streamConfig[_usedComponent].gain == 0.0 ) {
+	if ( _streamConfig[_targetComponent].gain == 0.0 ) {
 		setStatus(MissingGain, 0);
 		return;
 	}
 
 	SignalUnit gainUnit;
-	if ( !gainUnit.fromString(_streamConfig[_usedComponent].gainUnit.c_str()) ) {
+	if ( !gainUnit.fromString(_streamConfig[_targetComponent].gainUnit.c_str()) ) {
 		// Invalid unit string
 		setStatus(IncompatibleUnit, 2);
 		return;
@@ -857,10 +857,11 @@ void PGAV::process(const Record *record, const DoubleArray &) {
 	// -------------------------------------------------------------------
 	// Apply gain
 	// -------------------------------------------------------------------
-	SEISCOMP_DEBUG(">  gain = %.2f", _streamConfig[_usedComponent].gain);
+	SEISCOMP_DEBUG(">  gain = %.2f", _streamConfig[_targetComponent].gain);
 
-	for ( int i = 0; i < n; ++i )
-		_data[i] /= _streamConfig[_usedComponent].gain;
+	for ( int i = 0; i < n; ++i ) {
+		_data[i] /= _streamConfig[_targetComponent].gain;
+	}
 
 
 	// -------------------------------------------------------------------
@@ -1169,7 +1170,7 @@ void PGAV::process(const Record *record, const DoubleArray &) {
 	// Deconvolve data
 	// -------------------------------------------------------------------
 	if ( _config.useDeconvolution ) {
-		Sensor *sensor = _streamConfig[_usedComponent].sensor();
+		Sensor *sensor = _streamConfig[_targetComponent].sensor();
 
 		// When using full responses then all information needs to be set up
 		// correctly otherwise an error is set

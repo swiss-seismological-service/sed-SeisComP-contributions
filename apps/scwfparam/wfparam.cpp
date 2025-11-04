@@ -1622,7 +1622,7 @@ void WFParam::process(Origin *origin) {
 						        << tmp.stationCode() << "." << tmp.locationCode() << "."
 						        << tmp.channelCode() << endl;
 						if ( addProcessor(tmp, tc.comps[i], triggerTime,
-						                  (WaveformProcessor::StreamComponent)i) == -3 )
+						                  (WaveformProcessor::StreamComponents)i) == -3 )
 							++_currentProcess->remainingChannels;
 					}
 				}
@@ -1658,7 +1658,7 @@ void WFParam::process(Origin *origin) {
 						        << tmp.stationCode() << "." << tmp.locationCode() << "."
 						        << tmp.channelCode() << endl;
 						if ( addProcessor(tmp, tc.comps[i], triggerTime,
-						                  (WaveformProcessor::StreamComponent)i) == -3 )
+						                  (WaveformProcessor::StreamComponents)i) == -3 )
 							++_currentProcess->remainingChannels;
 					}
 				}
@@ -1725,7 +1725,7 @@ void WFParam::process(Origin *origin) {
 int WFParam::addProcessor(const DataModel::WaveformStreamID &waveformID,
                           DataModel::Stream *selectedStream,
                           const Core::Time &time,
-                          WaveformProcessor::StreamComponent component) {
+                          WaveformProcessor::StreamComponents component) {
 	WaveformProcessor::Component components[3];
 	int componentCount = 0;
 
