@@ -19,7 +19,7 @@
 #include "util.h"
 #include "msg.h"
 
-#include <seiscomp/logging/filerotator.h>
+#include <seiscomp/logging/output/filerotator.h>
 #include <seiscomp/logging/channel.h>
 
 #include <seiscomp/core/genericrecord.h>
