@@ -84,7 +84,8 @@ class Reloc : public Client::Application {
 			                        "option should not be mixed with --dump.",
 			                        &_epFile);
 			commandline().addOption("Input", "origin-id,O",
-			                        "Reprocess the origin and send a message.",
+			                        "Reprocess the origin and send a message. This "
+			                        "option can be provided multiple times.",
 			                        &_originIDs);
 			commandline().addOption("Input", "use-weight",
 			                        "Use current picks weight.", &_useWeight, true);

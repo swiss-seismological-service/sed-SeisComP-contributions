@@ -163,7 +163,7 @@
 				<option flag="O" long-flag="origin-id" argument="arg">
 					<description>
 					Reprocess the origin and send a message unless test mode is
-					activated.
+					activated. This option can be provided multiple times.
 					</description>
 				</option>
 				<option long-flag="use-weight"  param-ref="reloc.useWeight" default="0">
