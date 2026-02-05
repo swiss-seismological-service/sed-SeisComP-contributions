@@ -47,6 +47,9 @@ extern "C" {
 #include <sstream>
 #include <iomanip>
 #include <set>
+#include <iostream>
+#include <filesystem>
+#include <string>
 
 
 ADD_SC_PLUGIN(
@@ -56,6 +59,7 @@ ADD_SC_PLUGIN(
 	0, 7, 2
 )
 
+namespace fs = std::filesystem;
 
 using namespace std;
 using namespace Seiscomp::Core;
@@ -417,7 +421,7 @@ bool NLLocator::init(const Config::Config &config) {
 		_controlFilePath = env->absolutePath(config.getString("NonLinLoc.controlFile"));
 		/*
 		if ( !Util::fileExists(_controlFilePath) ) {
-			SEISCOMP_ERROR("NonLinLoc.controlFile: file %s does not exist",
+			SEISCOMP_ERROR("  + missing NonLinLoc.controlFile: %s",
 			               _controlFilePath.c_str());
 			return false;
 		}
@@ -434,9 +438,12 @@ bool NLLocator::init(const Config::Config &config) {
 	try { _profileNames = config.getStrings("NonLinLoc.profiles"); }
 	catch ( ... ) {}
 
+	SEISCOMP_DEBUG("NonLinLoc profile configurations");
+	SEISCOMP_DEBUG("================================");
 	for ( IDList::iterator it = _profileNames.begin();
 	      it != _profileNames.end(); ) {
 
+		SEISCOMP_DEBUG("Parameters for profile '%s'", it->c_str());
 		Profile prof;
 		string prefix = string("NonLinLoc.profile.") + *it + ".";
 
@@ -445,10 +452,15 @@ bool NLLocator::init(const Config::Config &config) {
 		try { prof.earthModelID = config.getString(prefix + "earthModelID"); }
 		catch ( ... ) {}
 
+		SEISCOMP_DEBUG("  + Earth model                              : %s",
+		               prof.earthModelID.c_str());
+
 		try { prof.methodID = config.getString(prefix + "methodID"); }
 		catch ( ... ) {
 			prof.methodID = "NonLinLoc";
 		}
+		SEISCOMP_DEBUG("  + method                                   : %s",
+		               prof.methodID.c_str());
 
 		try { prof.tablePath = env->absolutePath(config.getString(prefix + "tablePath")); }
 		catch ( ... ) {}
@@ -459,12 +471,51 @@ bool NLLocator::init(const Config::Config &config) {
 		}
 
 		if ( prof.tablePath.empty() ) {
-			SEISCOMP_ERROR("NonLinLoc.profile.%s: none or empty tablePath", it->c_str());
+			SEISCOMP_ERROR("  + none or empty value for parameter tablePath");
+			SEISCOMP_WARNING("+ ignoring NonLinLoc profile '%s'", it->c_str());
 			it = _profileNames.erase(it);
 			result = false;
 			continue;
 		}
 
+		SEISCOMP_DEBUG("  + table path                               : %s",
+		               prof.tablePath.c_str());
+		fs::path input(prof.tablePath);
+		fs::path tableDir = input.parent_path();
+		std::string filePrefix = input.filename().string();
+		if (tableDir.empty()) {
+			tableDir = ".";
+		}
+
+		if ( !fs::exists(tableDir) || !fs::is_directory(tableDir) ) {
+			SEISCOMP_ERROR("  + path to travel-time tables does not exist: %s",
+			               tableDir.c_str());
+			SEISCOMP_WARNING("+ ignoring NonLinLoc profile '%s'", it->c_str());
+			it = _profileNames.erase(it);
+			result = false;
+			continue;
+		}
+
+		SEISCOMP_DEBUG("  + testing existence of files in directory  : %s",
+		               tableDir.c_str());
+		size_t fileCount = 0;
+		for ( const auto &entry : fs::directory_iterator(tableDir) ) {
+			std::string fileName = entry.path().filename().string();
+			if ( fileName.rfind(filePrefix, 0) == 0 ) {
+				// count files starting with prefix
+				++fileCount;
+			}
+		}
+		if ( fileCount == 0 ) {
+			SEISCOMP_ERROR("    + found no files starting with           : %s",
+			               prof.tablePath.c_str());
+			SEISCOMP_WARNING("+ ignoring NonLinLoc profile '%s'", it->c_str());
+			it = _profileNames.erase(it);
+			result = false;
+			continue;
+		}
+		SEISCOMP_DEBUG("    + found %5ld files starting with        : %s",
+		               fileCount, prof.tablePath.c_str());
 
 		string regionType;
 		try {
@@ -483,15 +534,19 @@ bool NLLocator::init(const Config::Config &config) {
 		}
 
 		if ( !prof.region ) {
-			SEISCOMP_ERROR("NonLinLoc.profile.%s: invalid transformation: %s",
-			               it->c_str(), regionType.c_str());
+			SEISCOMP_ERROR("  + invalid transformation                   : %s",
+			               regionType.c_str());
+			SEISCOMP_WARNING("+ ignoring NonLinLoc profile '%s'", it->c_str());
 			it = _profileNames.erase(it);
 			result = false;
 			continue;
 		}
+		SEISCOMP_DEBUG("  + transformation                           : %s",
+		               regionType.c_str());
 
 		if ( !prof.region->init(config, prefix) ) {
-			SEISCOMP_ERROR("NonLinLoc.profile.%s: invalid region parameters", it->c_str());
+			SEISCOMP_ERROR("  + invalid region parameters");
+			SEISCOMP_WARNING("+ ignoring NonLinLoc profile '%s'", it->c_str());
 			it = _profileNames.erase(it);
 			result = false;
 			continue;
@@ -507,19 +562,28 @@ bool NLLocator::init(const Config::Config &config) {
 		}
 
 		if ( !Util::fileExists(prof.controlFile) ) {
-			SEISCOMP_ERROR("NonLinLoc.profile.%s.controlFile: file %s does not exist",
-			               it->c_str(), prof.controlFile.c_str());
+			SEISCOMP_ERROR("  + missing control file                     : %s",
+			               prof.controlFile.c_str());
+			SEISCOMP_WARNING("+ ignoring NonLinLoc profile '%s'", it->c_str());
 			it = _profileNames.erase(it);
 			result = false;
 			continue;
 		}
+		SEISCOMP_DEBUG("  + control file                             : %s",
+		               prof.controlFile.c_str());
 
 		_profiles.push_back(prof);
-
 		++it;
 	}
 
-	_profileNames.insert(_profileNames.begin(), "automatic");
+	if ( _profiles.size() > 0 ) {
+		SEISCOMP_DEBUG("NonLinLoc: Found %d profiles", _profiles.size());
+		_profileNames.insert(_profileNames.begin(), "automatic");
+	}
+	else {
+		SEISCOMP_WARNING("NonLinLoc: Found no profiles");
+		return false;
+	}
 
 	try {
 		_enableNLLOutput = config.getBool("NonLinLoc.saveIntermediateOutput");
@@ -664,8 +728,9 @@ int NLLocator::capabilities() const {
 Origin* NLLocator::locate(PickList &pickList) {
 	_lastWarning = "";
 
-	if ( pickList.empty() )
+	if ( pickList.empty() ) {
 		throw LocatorException("Empty observation set");
+	}
 
 	if ( !_currentProfile ) {
 		throw GeneralException("No profile set");
@@ -686,10 +751,10 @@ Origin* NLLocator::locate(PickList &pickList) {
 
 	if ( earthModelPath.empty() ) {
 		if ( _profileNames.empty() ) {
-			throw GeneralException("No earth model configured");
+			throw GeneralException("No Earth model configured");
 		}
 		else {
-			throw GeneralException("Wrong earth model set");
+			throw GeneralException("Wrong Earth model set");
 		}
 	}
 
@@ -699,9 +764,11 @@ Origin* NLLocator::locate(PickList &pickList) {
 
 	// copy user set parameters to param strings
 	for ( ParameterMap::iterator it = _parameters.begin();
-	      it != _parameters.end(); ++it )
-		if ( !it->second.empty() )
+	      it != _parameters.end(); ++it ) {
+		if ( !it->second.empty() ) {
 			params.push_back(it->first + " " + it->second);
+		}
+	}
 
 	PickList usedPicks;
 
@@ -894,15 +961,18 @@ Origin* NLLocator::locate(PickList &pickList) {
 	std::vector<char*> obs_buf, control_buf;
 
 	obs_buf.resize(obs.size());
-	for ( size_t i = 0; i < obs.size(); ++i )
+	for ( size_t i = 0; i < obs.size(); ++i ) {
 		obs_buf[i] = &obs[i][0];
+	}
 
 	control_buf.resize(_controlFile.size() + params.size());
-	for ( size_t i = 0; i < _controlFile.size(); ++i )
+	for ( size_t i = 0; i < _controlFile.size(); ++i ) {
 		control_buf[i] = &_controlFile[i][0];
+	}
 
-	for ( size_t i = 0; i < params.size(); ++i )
+	for ( size_t i = 0; i < params.size(); ++i ) {
 		control_buf[_controlFile.size()+i] = &params[i][0];
+	}
 
 	// call taken from NLL_func_test
 	int return_locations = 1;
