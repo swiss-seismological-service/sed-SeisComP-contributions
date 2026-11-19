@@ -139,7 +139,7 @@ struct GlobalRegion : public NLLocator::Region {
 
 // Class that implementes the SIMPLE transformation as documented
 // here: http://alomax.free.fr/nlloc/
-// It expects the region to be a grid 
+// It expects the region to be a grid
 struct SimpleTransformedRegion : public NLLocator::Region {
 	bool init(const Config::Config &config, const std::string &prefix) {
 		vector<string> list;
@@ -802,7 +802,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 
 		usedPicks.push_back(*it);
 
-		// create the LOCSRCE entries 
+		// create the LOCSRCE entries
 		params.push_back(string("LOCSRCE ") +
 		                 stationName(pick, stationNameFormat) +
 		                 " LATLON " +
@@ -937,7 +937,7 @@ Origin* NLLocator::locate(PickList &pickList) {
 	bool hasExpect = false;
 
 	for ( const auto &line : _controlFile ) {
-		if ( line.rfind("LOCHYPOUT", 0) != 0 ) 
+		if ( line.rfind("LOCHYPOUT", 0) != 0 )
 			continue;
 
 		// detect supported flags
@@ -1471,7 +1471,7 @@ bool NLLocator::NLL2SC3(Origin *origin, string &locComment, const void *vnode,
 	//bool globalMode = GeometryMode == MODE_GLOBAL;
 
 	CreationInfo ci;
-	ci.setCreationTime(Core::Time().gmt());
+	ci.setCreationTime(Core::Time::UTC());
 	origin->setCreationInfo(ci);
 
 	origin->setTime(ot);

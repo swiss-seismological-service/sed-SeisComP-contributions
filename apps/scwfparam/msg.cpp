@@ -117,7 +117,7 @@ bool sendMessages(Seiscomp::Client::Connection *con,
 	CreationInfo ci;
 	ci.setAgencyID(SCCoreApp->agencyID());
 	ci.setAuthor(SCCoreApp->author());
-	ci.setCreationTime(Time::GMT());
+	ci.setCreationTime(Time::UTC());
 
 	StrongMotionParameters smp;
 
